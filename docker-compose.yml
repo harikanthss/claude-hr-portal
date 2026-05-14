@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET:-grevya-secret-change-me}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    volumes:
+      - grevya_data:/app/backend/data
+      - grevya_uploads:/app/backend/uploads
+    restart: unless-stopped
+
+volumes:
+  grevya_data:
+  grevya_uploads:
