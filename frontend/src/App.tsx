@@ -16,9 +16,11 @@ import OrgChartPage from './pages/OrgChartPage';
 import ExpensesPage from './pages/ExpensesPage';
 import OnboardingPage from './pages/OnboardingPage';
 import CalendarPage from './pages/CalendarPage';
-import {
-  ReportsPage, NotificationsPage, LeaderboardPage, AIPage, ProfilePage
-} from './pages/OtherPages';
+import ReportsPage from './pages/ReportsPage';
+import NotificationsPage from './pages/NotificationsPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import AIInsightsPage from './pages/AIInsightsPage';
+import ProfilePage from './pages/ProfilePage';
 import PayslipsPage from './pages/PayslipsPage';
 import CompliancePage from './pages/CompliancePage';
 import DocumentsPage from './pages/DocumentsPage';
@@ -42,7 +44,7 @@ function PageContent({ page }: { page: string }) {
   if (page === 'reports') return <ReportsPage />;
   if (page === 'notifications') return <NotificationsPage />;
   if (page === 'leaderboard') return <LeaderboardPage />;
-  if (page === 'ai') return <AIPage />;
+  if (page === 'ai') return <AIInsightsPage />;
   if (page === 'payslips') return <PayslipsPage />;
   if (page === 'profile') return <ProfilePage />;
   if (page === 'recruitment') return <RecruitmentPage />;
