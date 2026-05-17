@@ -46,6 +46,7 @@ const NAV_SECTIONS = [
       { label: 'Leaderboard',   icon: <Trophy size={18} />, page: 'leaderboard',   roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
       { label: 'AI Insights',   icon: <Zap size={18} />,    page: 'ai',            roles: ['hr_manager', 'manager'] as UserRole[] },
       { label: 'Audit Log',     icon: <Shield size={18} />, page: 'audit',         roles: ['hr_manager', 'manager'] as UserRole[] },
+      { label: 'Compliance',     icon: <Shield size={18} />, page: 'compliance',    roles: ['admin', 'hr_manager'] as UserRole[] },
       { label: 'Notifications', icon: <Bell size={18} />,   page: 'notifications', roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
       { label: 'Profile',       icon: <User size={18} />,   page: 'profile',       roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
     ],

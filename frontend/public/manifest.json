@@ -1,0 +1,17 @@
+{
+  "name": "Grevya HR Portal",
+  "short_name": "Grevya HR",
+  "description": "Modern HR Management Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1f14",
+  "theme_color": "#22c55e",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "shortcuts": [
+    { "name": "Check In", "url": "/?page=attendance", "description": "Quick attendance check-in" },
+    { "name": "Leave Request", "url": "/?page=leave", "description": "Apply for leave" }
+  ]
+}

@@ -17,8 +17,10 @@ import ExpensesPage from './pages/ExpensesPage';
 import OnboardingPage from './pages/OnboardingPage';
 import CalendarPage from './pages/CalendarPage';
 import {
-  ReportsPage, NotificationsPage, LeaderboardPage, AIPage, PayslipsPage, ProfilePage
+  ReportsPage, NotificationsPage, LeaderboardPage, AIPage, ProfilePage
 } from './pages/OtherPages';
+import PayslipsPage from './pages/PayslipsPage';
+import CompliancePage from './pages/CompliancePage';
 import DocumentsPage from './pages/DocumentsPage';
 import ShiftsPage from './pages/ShiftsPage';
 import AuditLogPage from './pages/AuditLogPage';
@@ -51,6 +53,7 @@ function PageContent({ page }: { page: string }) {
   if (page === 'documents') return <DocumentsPage />;
   if (page === 'shifts') return <ShiftsPage />;
   if (page === 'audit') return <AuditLogPage />;
+  if (page === 'compliance') return <CompliancePage />;
   return <HRDashboard />;
 }
 
@@ -125,6 +128,7 @@ const PAGE_META: Record<string, { title: string; desc: string }> = {
   documents: { title: 'Documents', desc: 'Upload, manage and download company documents' },
   shifts: { title: 'Shift Scheduling', desc: 'Schedule and manage employee shifts' },
   audit: { title: 'Audit Log', desc: 'Track all system activities and changes' },
+  compliance: { title: 'Compliance Reports', desc: 'PF, ESI, TDS and statutory filing reports' },
 };
 
 function PageHeader({ page }: { page: string }) {

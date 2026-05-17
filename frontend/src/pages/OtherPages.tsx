@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
-import { Bell, Download, FileText, Zap, Trophy, User, Mail, Phone, MapPin, Edit2, Check, X, Shield, RefreshCw } from 'lucide-react';
+import { Bell, Download, FileText, Zap, Trophy, User, Mail, Phone, MapPin, Edit2, Check, X, Shield, RefreshCw, Lock } from 'lucide-react';
 
 const BADGES_MAP: Record<string, any> = {
   perfect_attendance: { name: 'Perfect Attendance', icon: '🏆', color: '#22c55e' },
@@ -446,6 +446,11 @@ export function ProfilePage() {
   const [empData, setEmpData] = useState({ points:0, streak:0, performance:0, attendance:0, joinDate:'', department:'', position:'', salary:0 });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [changePw, setChangePw] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
     api.get('/profile').then(data => {
@@ -455,6 +460,20 @@ export function ProfilePage() {
       }
     }).catch(()=>{});
   }, []);
+
+  const handleChangePw = async () => {
+    setPwError('');
+    if (pwForm.next.length < 8) { setPwError('Password must be at least 8 characters.'); return; }
+    if (pwForm.next !== pwForm.confirm) { setPwError('Passwords do not match.'); return; }
+    setPwSaving(true);
+    try {
+      await api.post('/auth/change-password', { currentPassword: pwForm.current, newPassword: pwForm.next });
+      setPwSuccess(true);
+      setPwForm({ current:'', next:'', confirm:'' });
+      setTimeout(() => { setChangePw(false); setPwSuccess(false); }, 2000);
+    } catch (e: any) { setPwError(e.message || 'Failed to change password.'); }
+    finally { setPwSaving(false); }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -474,6 +493,31 @@ export function ProfilePage() {
 
   return (
     <div className="animate-fade">
+      {/* Change Password Modal */}
+      {changePw && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div className="card" style={{ width:'100%', maxWidth:420, padding:'32px 36px' }}>
+            <h3 style={{ marginBottom:20 }}>Change Password</h3>
+            {pwSuccess && <div style={{ padding:'12px', background:'#dcfce7', border:'1px solid #86efac', borderRadius:8, color:'#16a34a', fontSize:'0.85rem', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}><Check size={15}/> Password changed! Logging you out...</div>}
+            {pwError && <div style={{ padding:'12px', background:'#fee2e2', border:'1px solid #fecaca', borderRadius:8, color:'#dc2626', fontSize:'0.85rem', marginBottom:14 }}>{pwError}</div>}
+            {[
+              { label:'Current Password', key:'current', placeholder:'Enter current password' },
+              { label:'New Password', key:'next', placeholder:'Min 8 characters' },
+              { label:'Confirm New Password', key:'confirm', placeholder:'Repeat new password' },
+            ].map(f => (
+              <div key={f.key} className="form-group" style={{ marginBottom:14 }}>
+                <label className="form-label">{f.label}</label>
+                <input type="password" className="input" placeholder={f.placeholder} value={pwForm[f.key as keyof typeof pwForm]} onChange={e => setPwForm(p => ({ ...p, [f.key]: e.target.value }))} />
+              </div>
+            ))}
+            <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:20 }}>
+              <button className="btn btn-secondary" onClick={() => { setChangePw(false); setPwError(''); }}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleChangePw} disabled={pwSaving}><Lock size={14}/> {pwSaving ? 'Saving...' : 'Update Password'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {success && (
         <div style={{ padding:'12px 20px', background:'#dcfce7', border:'1px solid #22c55e', borderRadius:10, marginBottom:16, color:'#16a34a', display:'flex', alignItems:'center', gap:8, fontSize:'0.875rem', fontWeight:600 }}>
           <Check size={16}/> Profile updated successfully!
