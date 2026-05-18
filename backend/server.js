@@ -22,6 +22,8 @@ app.use('/api/payslips',      require('./routes/payslips'));
 app.use('/api/performance',   require('./routes/performance'));
 app.use('/api/expenses',      require('./routes/expenses'));
 app.use('/api/recruitment',   require('./routes/recruitment'));
+app.use('/api/jobs',          require('./routes/jobs'));
+app.use('/api/candidates',    require('./routes/candidates'));
 app.use('/api/shifts',        require('./routes/shifts'));
 app.use('/api/documents',     require('./routes/documents'));
 app.use('/api/calendar',      require('./routes/calendar'));

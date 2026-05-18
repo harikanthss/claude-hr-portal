@@ -68,11 +68,11 @@ export default function RecruitmentPage() {
   const [jobs, setJobs] = useState<JobOpening[]>([]);
 
   React.useEffect(() => {
-    fetch('http://localhost:3001/api/candidates', { headers: getHeaders() })
+    fetch('${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/candidates', { headers: getHeaders() })
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) setCandidates(d); })
       .catch(() => {});
-    fetch('http://localhost:3001/api/jobs', { headers: getHeaders() })
+    fetch('${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/jobs', { headers: getHeaders() })
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) setJobs(d); })
       .catch(() => {});
@@ -98,7 +98,7 @@ export default function RecruitmentPage() {
     if (!c) return;
     const next = STAGE_NEXT[c.stage];
     if (!next) return;
-    await fetch(`http://localhost:3001/api/candidates/${id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/candidates/${id}`, {
       method: 'PUT', headers: getHeaders(),
       body: JSON.stringify({ ...c, stage: next })
     });
@@ -109,7 +109,7 @@ export default function RecruitmentPage() {
   const rejectCandidate = async (id: string) => {
     const c = candidates.find(c => c.id === id);
     if (!c) return;
-    await fetch(`http://localhost:3001/api/candidates/${id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/candidates/${id}`, {
       method: 'PUT', headers: getHeaders(),
       body: JSON.stringify({ ...c, stage: 'rejected' })
     });
@@ -124,7 +124,7 @@ export default function RecruitmentPage() {
       posted: new Date().toISOString().split('T')[0],
       status: 'active',
     };
-    const res = await fetch(`http://localhost:3001/api/jobs`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/jobs`, {
       method: 'POST', headers: getHeaders(),
       body: JSON.stringify(newJob)
     });
@@ -143,7 +143,7 @@ export default function RecruitmentPage() {
       stage: 'applied',
       appliedDate: new Date().toISOString().split('T')[0],
     };
-    const res = await fetch(`http://localhost:3001/api/candidates`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/candidates`, {
       method: 'POST', headers: getHeaders(),
       body: JSON.stringify(nc)
     });
@@ -299,7 +299,7 @@ export default function RecruitmentPage() {
                 <button className="btn btn-secondary btn-sm"
                   onClick={async () => {
                     const nextStatus = job.status === 'active' ? 'paused' : 'active';
-                    await fetch(`http://localhost:3001/api/jobs/${job.id}`, {
+                    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/jobs/${job.id}`, {
                       method: 'PUT', headers: getHeaders(),
                       body: JSON.stringify({ ...job, status: nextStatus })
                     });
@@ -309,7 +309,7 @@ export default function RecruitmentPage() {
                 </button>
                 <button className="btn btn-danger btn-sm"
                   onClick={async () => { 
-                    await fetch(`http://localhost:3001/api/jobs/${job.id}`, {
+                    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/jobs/${job.id}`, {
                       method: 'PUT', headers: getHeaders(),
                       body: JSON.stringify({ ...job, status: 'closed' })
                     });
