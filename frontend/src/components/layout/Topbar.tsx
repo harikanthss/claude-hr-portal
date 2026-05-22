@@ -28,7 +28,7 @@ export default function Topbar({ currentPage, onNavigate }: TopbarProps) {
   const { currentUser, darkMode, toggleDarkMode, toggleSidebar, notifications } = useStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const unread = notifications.filter(n => !n.read).length;
+  const unread = notifications.filter(n => !n.read && !n.isRead).length;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

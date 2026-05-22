@@ -1,3 +1,4 @@
+import { api } from '../services/store';
 import React, { useState } from 'react';
 import { Plus, X, Briefcase, Users, Clock, CheckCircle2, XCircle, Search, ChevronRight, Mail, Phone } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
@@ -58,24 +59,13 @@ const STAGE_NEXT: Record<string, Candidate['stage']> = {
   applied: 'screening', screening: 'interview', interview: 'offer', offer: 'hired',
 };
 
-const getHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${localStorage.getItem('token')}`
-});
-
 export default function RecruitmentPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [jobs, setJobs] = useState<JobOpening[]>([]);
 
   React.useEffect(() => {
-    fetch('${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/candidates', { headers: getHeaders() })
-      .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setCandidates(d); })
-      .catch(() => {});
-    fetch('${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/jobs', { headers: getHeaders() })
-      .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setJobs(d); })
-      .catch(() => {});
+    api.get('/candidates').then(d => { if (Array.isArray(d)) setCandidates(d); }).catch(() => {});
+    api.get('/jobs').then(d => { if (Array.isArray(d)) setJobs(d); }).catch(() => {});
   }, []);
   const [view, setView] = useState<'pipeline' | 'jobs'>('pipeline');
   const [search, setSearch] = useState('');
@@ -98,10 +88,7 @@ export default function RecruitmentPage() {
     if (!c) return;
     const next = STAGE_NEXT[c.stage];
     if (!next) return;
-    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/candidates/${id}`, {
-      method: 'PUT', headers: getHeaders(),
-      body: JSON.stringify({ ...c, stage: next })
-    });
+    await api.put(`/candidates/${id}`, { ...c, stage: next });
     setCandidates(prev => prev.map(c => c.id === id ? { ...c, stage: next } : c));
     toast.success(`${c.name} advanced to ${next.charAt(0).toUpperCase() + next.slice(1)}!`);
   };
@@ -109,10 +96,7 @@ export default function RecruitmentPage() {
   const rejectCandidate = async (id: string) => {
     const c = candidates.find(c => c.id === id);
     if (!c) return;
-    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/candidates/${id}`, {
-      method: 'PUT', headers: getHeaders(),
-      body: JSON.stringify({ ...c, stage: 'rejected' })
-    });
+    await api.put(`/candidates/${id}`, { ...c, stage: 'rejected' });
     setCandidates(prev => prev.map(c => c.id === id ? { ...c, stage: 'rejected' } : c));
     toast.warning(`${c.name}'s application rejected.`);
   };
@@ -124,11 +108,7 @@ export default function RecruitmentPage() {
       posted: new Date().toISOString().split('T')[0],
       status: 'active',
     };
-    const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/jobs`, {
-      method: 'POST', headers: getHeaders(),
-      body: JSON.stringify(newJob)
-    });
-    const savedJob = await res.json();
+    const savedJob = await api.post('/jobs', newJob);
     setJobs(prev => [savedJob, ...prev]);
     setAddJobModal(false);
     setJobForm({ title: '', department: 'Engineering', type: 'full_time', location: '', openings: 1 });
@@ -143,11 +123,7 @@ export default function RecruitmentPage() {
       stage: 'applied',
       appliedDate: new Date().toISOString().split('T')[0],
     };
-    const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/candidates`, {
-      method: 'POST', headers: getHeaders(),
-      body: JSON.stringify(nc)
-    });
-    const savedCand = await res.json();
+    const savedCand = await api.post('/candidates', nc);
     setCandidates(prev => [savedCand, ...prev]);
     setAddCandModal(false);
     setCandForm({ name: '', email: '', phone: '', position: '', department: 'Engineering' });
@@ -299,20 +275,14 @@ export default function RecruitmentPage() {
                 <button className="btn btn-secondary btn-sm"
                   onClick={async () => {
                     const nextStatus = job.status === 'active' ? 'paused' : 'active';
-                    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/jobs/${job.id}`, {
-                      method: 'PUT', headers: getHeaders(),
-                      body: JSON.stringify({ ...job, status: nextStatus })
-                    });
+                    await api.put(`/jobs/${job.id}`, { ...job, status: nextStatus });
                     setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: nextStatus } : j));
                   }}>
                   {job.status === 'active' ? 'Pause' : 'Activate'}
                 </button>
                 <button className="btn btn-danger btn-sm"
                   onClick={async () => { 
-                    await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/jobs/${job.id}`, {
-                      method: 'PUT', headers: getHeaders(),
-                      body: JSON.stringify({ ...job, status: 'closed' })
-                    });
+                    await api.put(`/jobs/${job.id}`, { ...job, status: 'closed' });
                     setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'closed' } : j)); 
                     toast.info('Job closed', job.title); 
                   }}>

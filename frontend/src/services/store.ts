@@ -72,6 +72,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem('token', data.token);
+        const savedDark = localStorage.getItem('darkMode') === 'true';
         set({ currentUser: data.user as User });
         await get().fetchInitialData();
         return true;
@@ -154,12 +155,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   markNotificationRead: async (id) => {
     await fetch(`${API_URL}/notifications/${id}/read`, { method: 'PUT', headers: getHeaders() });
-    set(s => ({ notifications: s.notifications.map(n => n.id === id ? { ...n, read: true } : n) }));
+    set(s => ({ notifications: s.notifications.map(n => n.id === id ? { ...n, read: true, isRead: true } : n) }));
   },
 
   markAllRead: async () => {
     await fetch(`${API_URL}/notifications/mark-all-read`, { method: 'PUT', headers: getHeaders() });
-    set(s => ({ notifications: s.notifications.map(n => ({ ...n, read: true })) }));
+    set(s => ({ notifications: s.notifications.map(n => ({ ...n, read: true, isRead: true })) }));
   },
 }));
 

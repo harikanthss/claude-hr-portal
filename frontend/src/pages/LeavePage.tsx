@@ -1,203 +1,122 @@
 import React, { useState } from 'react';
-import { useStore } from '../services/store';
-import { LeaveRequest } from '../types';
-import { Search, Plus, Check, X, Calendar } from 'lucide-react';
-import { toast } from '../components/ui/Toast';
+import { useStore, api } from '../services/store';
+import type { LeaveRequest } from '../types';
+import { Calendar, CheckCircle2, XCircle, Clock, Plus, X, Check, AlertCircle } from 'lucide-react';
+import StatCard from '../components/ui/StatCard';
 
-const LEAVE_TYPES = ['sick', 'casual', 'annual', 'maternity', 'paternity', 'emergency'] as const;
+const LEAVE_TYPES = ['sick','casual','annual','emergency','maternity','paternity'];
+const STATUS_CONFIG: Record<string,{color:string;bg:string;icon:React.ReactNode}> = {
+  pending:  { color:'#b45309', bg:'#fef9c3', icon:<Clock size={12}/> },
+  approved: { color:'#16a34a', bg:'#dcfce7', icon:<CheckCircle2 size={12}/> },
+  rejected: { color:'#dc2626', bg:'#fee2e2', icon:<XCircle size={12}/> },
+};
 
 export default function LeavePage() {
   const { currentUser, leaveRequests, approveLeave, rejectLeave, applyLeave } = useStore();
-  const [tab, setTab] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
-  const [search, setSearch] = useState('');
-  const [modal, setModal] = useState(false);
-  const [actionModal, setActionModal] = useState<{ req: LeaveRequest; type: 'approve' | 'reject' } | null>(null);
+  const isManager = ['admin','hr_manager','manager'].includes(currentUser?.role||'');
+
+  const [showApply, setShowApply] = useState(false);
+  const [form, setForm] = useState({ type:'sick', startDate:'', endDate:'', reason:'' });
+  const [submitting, setSubmitting] = useState(false);
+  const [actionId, setActionId] = useState<string|null>(null);
   const [comment, setComment] = useState('');
-  const [form, setForm] = useState({
-    type: 'casual' as typeof LEAVE_TYPES[number],
-    startDate: '',
-    endDate: '',
-    reason: '',
-  });
+  const [activeTab, setActiveTab] = useState<string>('all');
 
-  const isHRorManager = currentUser?.role !== 'employee';
+  const myLeaves = currentUser?.role === 'employee' ? leaveRequests.filter(r => r.employeeId === currentUser.id) : leaveRequests;
+  const filtered = activeTab === 'all' ? myLeaves : myLeaves.filter(r => r.status === activeTab as unknown as string);
+  const pending = leaveRequests.filter(r => r.status === 'pending').length;
+  const approved = leaveRequests.filter(r => r.status === 'approved').length;
 
-  const filtered = leaveRequests
-    .filter(r => tab === 'all' || r.status === tab)
-    .filter(r => !search || r.employeeName.toLowerCase().includes(search.toLowerCase()) || r.type.includes(search.toLowerCase()))
-    .filter(r => currentUser?.role === 'employee' ? r.employeeId === 'e1' : true);
-
-  const counts = {
-    all: leaveRequests.length,
-    pending: leaveRequests.filter(r => r.status === 'pending').length,
-    approved: leaveRequests.filter(r => r.status === 'approved').length,
-    rejected: leaveRequests.filter(r => r.status === 'rejected').length,
-  };
-
-  const calcDays = (start: string, end: string) => {
-    if (!start || !end) return 0;
-    const diff = new Date(end).getTime() - new Date(start).getTime();
+  const calcDays = () => {
+    if (!form.startDate || !form.endDate) return 0;
+    const diff = new Date(form.endDate).getTime() - new Date(form.startDate).getTime();
     return Math.max(1, Math.ceil(diff / 86400000) + 1);
   };
 
-  const handleApply = () => {
-    if (!form.startDate || !form.endDate || !form.reason) return;
-    const days = calcDays(form.startDate, form.endDate);
-    applyLeave({
-      employeeId: currentUser?.id || 'e1',
-      employeeName: currentUser?.name || 'Kiran Patel',
-      employeeAvatar: currentUser?.avatar || 'KP',
-      department: currentUser?.department || 'Engineering',
-      type: form.type,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      days,
-      reason: form.reason,
-    });
-    setModal(false);
-    setForm({ type: 'casual', startDate: '', endDate: '', reason: '' });
-    toast.success('Leave request submitted!', `${days} day(s) of ${form.type} leave sent for approval.`);
+  const handleApply = async () => {
+    if (!form.startDate || !form.endDate) return;
+    setSubmitting(true);
+    try {
+      await applyLeave({ ...form, type: form.type as LeaveRequest['type'], days: calcDays(), employeeId: currentUser!.id, employeeName: currentUser!.name, employeeAvatar: currentUser!.avatar, department: currentUser!.department });
+      setShowApply(false);
+      setForm({ type:'sick', startDate:'', endDate:'', reason:'' });
+    } catch {} finally { setSubmitting(false); }
   };
 
-  const handleAction = () => {
-    if (!actionModal) return;
-    const { req, type } = actionModal;
-    if (type === 'approve') {
-      approveLeave(req.id, comment);
-      toast.success(`Leave approved`, `${req.employeeName}'s ${req.type} leave (${req.days}d) approved.`);
-    } else {
-      rejectLeave(req.id, comment);
-      toast.error(`Leave rejected`, `${req.employeeName}'s request has been declined.`);
-    }
-    setActionModal(null);
+  const handleAction = async (id: string, action: 'approved'|'rejected') => {
+    if (action === 'approved') await approveLeave(id, comment);
+    else await rejectLeave(id, comment);
+    setActionId(null);
     setComment('');
   };
 
-  const typeColor: Record<string, string> = {
-    sick: 'badge-red', casual: 'badge-blue', annual: 'badge-green',
-    maternity: 'badge-purple', paternity: 'badge-purple', emergency: 'badge-yellow',
+  const StatusBadge = ({ status }: { status: string }) => {
+    const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+    return (
+      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 10px', borderRadius:20, background:cfg.bg, color:cfg.color, fontSize:'0.7rem', fontWeight:700 }}>
+        {cfg.icon} {status.charAt(0).toUpperCase()+status.slice(1)}
+      </span>
+    );
   };
-
-  const leaveBalance = [
-    { type: 'Annual', used: 8, total: 18, color: '#22c55e' },
-    { type: 'Sick', used: 2, total: 10, color: '#ef4444' },
-    { type: 'Casual', used: 3, total: 6, color: '#3b82f6' },
-  ];
 
   return (
     <div className="animate-fade">
-      {/* Leave balance (for employees) */}
-      {currentUser?.role === 'employee' && (
-        <div className="grid-3 mb-6">
-          {leaveBalance.map(lb => (
-            <div key={lb.type} className="card" style={{ padding: '20px 24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{lb.type} Leave</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: 4 }}>{lb.total - lb.used}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>days remaining</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{lb.used}/{lb.total} used</div>
-                </div>
-              </div>
-              <div className="progress">
-                <div className="progress-bar" style={{ width: `${(lb.used / lb.total) * 100}%`, background: lb.color }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:20 }}>
+        <button className="btn btn-primary" onClick={() => setShowApply(true)}><Plus size={15}/> Apply for Leave</button>
+      </div>
 
-      {/* Actions */}
-      <div className="filter-row">
-        <div className="search-wrap" style={{ flex: 1, maxWidth: 300 }}>
-          <Search size={15} />
-          <input className="input search-input" placeholder="Search leaves..." value={search} onChange={e => setSearch(e.target.value)} style={{ height: 38 }} />
-        </div>
-        <div style={{ marginLeft: 'auto' }}>
-          <button className="btn btn-primary" onClick={() => setModal(true)}>
-            <Plus size={16} /> Apply for Leave
-          </button>
-        </div>
+      <div className="grid-4 mb-6">
+        <StatCard label="Total Requests" value={myLeaves.length} icon={<Calendar size={20}/>} iconBg="#dbeafe" iconColor="#1d4ed8"/>
+        <StatCard label="Pending" value={pending} icon={<Clock size={20}/>} iconBg="#fef9c3" iconColor="#b45309"/>
+        <StatCard label="Approved" value={approved} icon={<CheckCircle2 size={20}/>} iconBg="#dcfce7" iconColor="#16a34a"/>
+        <StatCard label="Rejected" value={myLeaves.filter(r=>r.status==='rejected').length} icon={<XCircle size={20}/>} iconBg="#fee2e2" iconColor="#dc2626"/>
       </div>
 
       {/* Tabs */}
-      <div className="tab-nav">
-        {(['all', 'pending', 'approved', 'rejected'] as const).map(t => (
-          <button key={t} className={`tab-btn ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-            <span style={{
-              marginLeft: 6,
-              background: tab === t ? 'var(--primary)' : 'var(--border)',
-              color: tab === t ? 'white' : 'var(--text-muted)',
-              borderRadius: 10,
-              padding: '1px 7px',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-            }}>
-              {counts[t]}
-            </span>
-          </button>
+      <div style={{ display:'flex', gap:4, marginBottom:16, background:'var(--bg)', padding:4, borderRadius:12, width:'fit-content' }}>
+        {(['all','pending','approved','rejected']).map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding:'8px 16px', borderRadius:9, border:'none', cursor:'pointer', fontSize:'0.8rem', fontWeight:600, background:activeTab===tab?'var(--bg-card)':'transparent', color:activeTab===tab?'var(--text-primary)':'var(--text-muted)', boxShadow:activeTab===tab?'var(--shadow-sm)':'none', transition:'all 200ms', textTransform:'capitalize' }}>{tab} {tab!=='all'&&<span style={{ marginLeft:4, padding:'1px 6px', borderRadius:10, background:activeTab===tab?'var(--primary)':'var(--border)', color:activeTab===tab?'white':'var(--text-muted)', fontSize:'0.65rem' }}>{myLeaves.filter(r=>tab==='all'||r.status===tab).length}</span>}</button>
         ))}
       </div>
 
-      {/* Table */}
+      {/* Leave List */}
       <div className="card">
-        <div className="table-wrap">
-          <table>
+        <div style={{ overflowX:'auto' }}>
+          <table className="table">
             <thead>
               <tr>
-                {isHRorManager && <th>Employee</th>}
-                <th>Type</th>
-                <th>Duration</th>
-                <th>Days</th>
-                <th>Reason</th>
-                <th>Applied On</th>
-                <th>Status</th>
-                {isHRorManager && <th>Actions</th>}
+                {isManager && <th>Employee</th>}
+                <th>Type</th><th>Start</th><th>End</th><th>Days</th><th>Reason</th><th>Applied</th><th>Status</th>
+                {isManager && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(req => (
+              {filtered.length === 0 ? (
+                <tr><td colSpan={isManager?9:8} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>No leave requests found</td></tr>
+              ) : filtered.map(req => (
                 <tr key={req.id}>
-                  {isHRorManager && (
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div className="avatar avatar-sm">{req.employeeAvatar}</div>
-                        <div>
-                          <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{req.employeeName}</div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{req.department}</div>
-                        </div>
-                      </div>
-                    </td>
+                  {isManager && (
+                    <td><div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <div className="avatar avatar-sm">{req.employeeAvatar}</div>
+                      <div style={{ fontWeight:600, fontSize:'0.85rem' }}>{req.employeeName}</div>
+                    </div></td>
                   )}
-                  <td><span className={`badge ${typeColor[req.type] || 'badge-gray'}`} style={{ textTransform: 'capitalize' }}>{req.type}</span></td>
-                  <td style={{ fontSize: '0.8rem' }}>{req.startDate} → {req.endDate}</td>
-                  <td style={{ fontWeight: 600 }}>{req.days}d</td>
-                  <td style={{ fontSize: '0.8rem', maxWidth: 200 }}>
-                    <span className="truncate" style={{ display: 'block' }}>{req.reason}</span>
-                  </td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{req.appliedOn}</td>
-                  <td>
-                    <span className={`badge ${req.status === 'approved' ? 'badge-green' : req.status === 'rejected' ? 'badge-red' : 'badge-yellow'}`}>
-                      {req.status}
-                    </span>
-                    {req.comments && (
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 2 }}>"{req.comments}"</div>
-                    )}
-                  </td>
-                  {isHRorManager && (
+                  <td><span className="chip" style={{ textTransform:'capitalize' }}>{req.type}</span></td>
+                  <td style={{ fontSize:'0.85rem' }}>{req.startDate}</td>
+                  <td style={{ fontSize:'0.85rem' }}>{req.endDate}</td>
+                  <td><span style={{ fontWeight:700 }}>{req.days}</span></td>
+                  <td style={{ fontSize:'0.8rem', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--text-secondary)' }}>{req.reason||'—'}</td>
+                  <td style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>{req.appliedOn?.split('T')[0]}</td>
+                  <td><StatusBadge status={req.status}/></td>
+                  {isManager && (
                     <td>
-                      {req.status === 'pending' && (
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn-primary btn-sm" onClick={() => setActionModal({ req, type: 'approve' })}>
-                            <Check size={12} />
-                          </button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setActionModal({ req, type: 'reject' })}>
-                            <X size={12} />
-                          </button>
+                      {req.status === 'pending' ? (
+                        <div style={{ display:'flex', gap:6 }}>
+                          <button className="btn btn-secondary btn-sm" style={{ background:'#dcfce7', color:'#16a34a', border:'1px solid #86efac' }} onClick={()=>{setActionId(req.id+':approved');setComment('');}}><Check size={13}/> Approve</button>
+                          <button className="btn btn-secondary btn-sm" style={{ background:'#fee2e2', color:'#dc2626', border:'1px solid #fecaca' }} onClick={()=>{setActionId(req.id+':rejected');setComment('');}}><X size={13}/> Reject</button>
                         </div>
+                      ) : (
+                        <span style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>by {req.approvedBy||'—'}</span>
                       )}
                     </td>
                   )}
@@ -205,91 +124,67 @@ export default function LeavePage() {
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && (
-            <div className="empty-state">
-              <Calendar size={32} />
-              <h3>No leave requests found</h3>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Apply Modal */}
-      {modal && (
-        <div className="modal-overlay" onClick={() => setModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Apply for Leave</h3>
-              <button className="btn btn-ghost btn-icon" onClick={() => setModal(false)}><X size={18} /></button>
+      {/* Action Modal */}
+      {actionId && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div className="card" style={{ width:'100%', maxWidth:400, padding:'24px 28px' }}>
+            <h3 style={{ marginBottom:16 }}>{actionId.includes('approved') ? '✅ Approve Leave' : '❌ Reject Leave'}</h3>
+            <div className="form-group">
+              <label className="form-label">Comment (optional)</label>
+              <textarea className="input" rows={3} value={comment} onChange={e=>setComment(e.target.value)} placeholder="Add a comment..."/>
             </div>
-            <div className="modal-body">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">Leave Type</label>
-                  <select className="select" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as any }))}>
-                    {LEAVE_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-                  </select>
-                </div>
-                <div className="grid-2" style={{ gap: 14 }}>
-                  <div className="form-group">
-                    <label className="form-label">Start Date</label>
-                    <input className="input" type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">End Date</label>
-                    <input className="input" type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} min={form.startDate} />
-                  </div>
-                </div>
-                {form.startDate && form.endDate && (
-                  <div className="alert alert-info" style={{ fontSize: '0.8rem' }}>
-                    <Calendar size={14} />
-                    Duration: <strong>{calcDays(form.startDate, form.endDate)} day(s)</strong>
-                  </div>
-                )}
-                <div className="form-group">
-                  <label className="form-label">Reason</label>
-                  <textarea className="textarea" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Brief reason for leave..." rows={3} />
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleApply} disabled={!form.startDate || !form.endDate || !form.reason}>
-                Submit Request
+            <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:16 }}>
+              <button className="btn btn-secondary" onClick={()=>setActionId(null)}>Cancel</button>
+              <button className={`btn ${actionId.includes('approved')?'btn-primary':''}`} style={actionId.includes('rejected')?{background:'#dc2626',color:'white'}:{}} onClick={()=>{const[id,action]=actionId.split(':');handleAction(id,action as any);}}>
+                {actionId.includes('approved')?'Approve':'Reject'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Approve/Reject Modal */}
-      {actionModal && (
-        <div className="modal-overlay" onClick={() => setActionModal(null)}>
-          <div className="modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{actionModal.type === 'approve' ? '✅ Approve Leave' : '❌ Reject Leave'}</h3>
-              <button className="btn btn-ghost btn-icon" onClick={() => setActionModal(null)}><X size={18} /></button>
+      {/* Apply Modal */}
+      {showApply && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div className="card" style={{ width:'100%', maxWidth:460, padding:'28px 32px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:20 }}>
+              <h3>Apply for Leave</h3>
+              <button onClick={()=>setShowApply(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)' }}><X size={20}/></button>
             </div>
-            <div className="modal-body">
-              <div style={{ background: 'var(--bg)', borderRadius: 10, padding: '12px 14px', marginBottom: 16, border: '1px solid var(--border)' }}>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>{actionModal.req.employeeName}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  {actionModal.req.type} leave · {actionModal.req.days} day(s) · {actionModal.req.startDate} to {actionModal.req.endDate}
+            <div style={{ display:'grid', gap:14 }}>
+              <div className="form-group">
+                <label className="form-label">Leave Type *</label>
+                <select className="input" value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value}))}>
+                  {LEAVE_TYPES.map(t=><option key={t} value={t} style={{ textTransform:'capitalize' }}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
+                </select>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                <div className="form-group">
+                  <label className="form-label">Start Date *</label>
+                  <input type="date" className="input" value={form.startDate} onChange={e=>setForm(f=>({...f,startDate:e.target.value}))} min={new Date().toISOString().split('T')[0]}/>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">End Date *</label>
+                  <input type="date" className="input" value={form.endDate} onChange={e=>setForm(f=>({...f,endDate:e.target.value}))} min={form.startDate||new Date().toISOString().split('T')[0]}/>
                 </div>
               </div>
+              {form.startDate && form.endDate && (
+                <div style={{ padding:'10px 14px', background:'var(--primary-subtle)', borderRadius:8, border:'1px solid var(--primary)', display:'flex', alignItems:'center', gap:8 }}>
+                  <AlertCircle size={15} color="var(--primary)"/>
+                  <span style={{ fontSize:'0.85rem', color:'var(--primary)', fontWeight:600 }}>{calcDays()} working day{calcDays()!==1?'s':''} requested</span>
+                </div>
+              )}
               <div className="form-group">
-                <label className="form-label">Comment (optional)</label>
-                <textarea className="textarea" value={comment} onChange={e => setComment(e.target.value)} placeholder="Add a note..." rows={2} />
+                <label className="form-label">Reason</label>
+                <textarea className="input" rows={3} value={form.reason} onChange={e=>setForm(f=>({...f,reason:e.target.value}))} placeholder="Brief reason for leave..."/>
               </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setActionModal(null)}>Cancel</button>
-              <button
-                className={`btn ${actionModal.type === 'approve' ? 'btn-primary' : 'btn-danger'}`}
-                onClick={handleAction}
-              >
-                {actionModal.type === 'approve' ? 'Approve' : 'Reject'}
-              </button>
+              <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+                <button className="btn btn-secondary" onClick={()=>setShowApply(false)}>Cancel</button>
+                <button className="btn btn-primary" onClick={handleApply} disabled={submitting||!form.startDate||!form.endDate}>{submitting?'Submitting...':'Submit Request'}</button>
+              </div>
             </div>
           </div>
         </div>

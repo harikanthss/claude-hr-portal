@@ -66,6 +66,7 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   timestamp: string;
   read: boolean;
+  isRead?: boolean;
   link?: string;
 }
 

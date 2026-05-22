@@ -244,6 +244,47 @@ async function seedIfEmpty(dbConn, isPg) {
     await run(dbConn, isPg, 'INSERT INTO onboarding_tasks (id,employeeId,employeeName,employeeAvatar,department,position,startDate,buddy,taskLabel,taskDueDay,taskAssignee,taskNotes,done) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', [`ob2-t${i}`,'ob2','Lavanya Krishnan','LK','Design','UI Designer','2024-04-08','Priya Sharma',obTasks[i],i,'HR',null,i<3?1:0]);
   }
 
+
+  // Extra expenses
+  const extraExpenses = [
+    ['INSERT INTO expenses (id,employeeId,employeeName,employeeAvatar,category,amount,description,date,status,submittedOn) VALUES (?,?,?,?,?,?,?,?,?,?)', [id('ex'),'e3','Ravi Nair','RN','Travel',12000,'Flight to Delhi conference','2024-03-20','approved','2024-03-21T10:00:00']],
+    ['INSERT INTO expenses (id,employeeId,employeeName,employeeAvatar,category,amount,description,date,status,submittedOn) VALUES (?,?,?,?,?,?,?,?,?,?)', [id('ex'),'e9','Vikram Joshi','VJ','Software',8500,'AWS training certification','2024-03-15','pending','2024-03-16T10:00:00']],
+    ['INSERT INTO expenses (id,employeeId,employeeName,employeeAvatar,category,amount,description,date,status,submittedOn) VALUES (?,?,?,?,?,?,?,?,?,?)', [id('ex'),'e4','Divya Kumar','DK','Food',3200,'Team lunch','2024-03-22','approved','2024-03-23T10:00:00']],
+  ];
+  for (const [sql, params] of extraExpenses) await run(dbConn, isPg, sql, params);
+
+  // Extra jobs
+  const extraJobs = [
+    ['INSERT INTO jobs (id,title,department,type,location,openings,posted,status) VALUES (?,?,?,?,?,?,?,?)', [id('job'),'Sales Manager','Sales','full_time','Delhi',1,'2024-03-12','active']],
+    ['INSERT INTO jobs (id,title,department,type,location,openings,posted,status) VALUES (?,?,?,?,?,?,?,?)', [id('job'),'DevOps Lead','Engineering','full_time','Hyderabad',1,'2024-03-18','active']],
+    ['INSERT INTO jobs (id,title,department,type,location,openings,posted,status) VALUES (?,?,?,?,?,?,?,?)', [id('job'),'Marketing Analyst','Marketing','full_time','Bangalore',2,'2024-03-20','active']],
+  ];
+  for (const [sql, params] of extraJobs) await run(dbConn, isPg, sql, params);
+
+  // Extra candidates
+  const extraCandidates = [
+    ['INSERT INTO candidates (id,name,email,phone,position,department,stage,appliedDate,avatar,score,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)', [id('cand'),'Prathik Kumar','prathik@email.com','+91 99000','Product Designer','Design','screening','2024-03-12','PK',78,'Good portfolio']],
+    ['INSERT INTO candidates (id,name,email,phone,position,department,stage,appliedDate,avatar,score,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)', [id('cand'),'Arjun Dev','arjun.d@email.com','+91 99002','DevOps Lead','Engineering','offer','2024-03-05','AD',88,'Strong AWS skills']],
+    ['INSERT INTO candidates (id,name,email,phone,position,department,stage,appliedDate,avatar,score,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)', [id('cand'),'Meena Sharma','meena@email.com','+91 99003','Marketing Analyst','Marketing','hired','2024-02-28','MS',94,'Excellent hire']],
+  ];
+  for (const [sql, params] of extraCandidates) await run(dbConn, isPg, sql, params);
+
+  // Performance reviews
+  const perfData = [
+    ['e1',88,85,72,90,82,95,'Strong frontend skills.','Contribute to 2 cross-team projects in Q2'],
+    ['e2',90,88,80,88,85,92,'Excellent UX research.','Lead the design system revamp'],
+    ['e9',95,80,85,96,90,88,'Outstanding DevOps work.','AWS certification by June'],
+    ['e6',82,86,75,84,80,90,'Good UI work, growing steadily.','Own mobile design patterns'],
+    ['e7',80,84,78,82,76,86,'Solid financial analysis.','Lead quarterly budget review'],
+  ];
+  for (const [empId,...scores] of perfData) {
+    const [ts,cs,ls,ds,is,tws,comments,goals] = scores;
+    const overall = Math.round((Number(ts)+Number(cs)+Number(ls)+Number(ds)+Number(is)+Number(tws))/6);
+    await run(dbConn, isPg, 'INSERT INTO performance_reviews (id,employeeId,reviewerId,period,technicalScore,communicationScore,leadershipScore,deliveryScore,innovationScore,teamworkScore,overallScore,comments,goals,status,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      [id('perf'),empId,'demo-mgr','Q1 2024',ts,cs,ls,ds,is,tws,overall,comments,goals,'completed','2024-03-28T10:00:00','2024-03-28T10:00:00']);
+    await run(dbConn, isPg, 'UPDATE employees SET performance=? WHERE id=?', [overall, empId]);
+  }
+
   console.log('✅ Database seeded successfully');
 }
 

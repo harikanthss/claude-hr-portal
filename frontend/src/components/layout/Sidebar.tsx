@@ -62,7 +62,7 @@ interface SidebarProps {
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const { currentUser, sidebarOpen, toggleSidebar, logout, notifications } = useStore();
-  const unread = notifications.filter(n => !n.read).length;
+  const unread = notifications.filter(n => !n.read && !n.isRead).length;
 
   if (!currentUser) return null;
 
