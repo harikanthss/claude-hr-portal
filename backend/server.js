@@ -36,6 +36,10 @@ app.use('/api/reports',       require('./routes/reports'));
 app.use('/api/leaderboard',   require('./routes/leaderboard'));
 app.use('/api/profile',       require('./routes/profile'));
 app.use('/api/compliance',    require('./routes/compliance'));
+app.use('/api/offer-letter',  require('./routes/offer-letter'));
+app.use('/api/holidays',      require('./routes/holidays'));
+app.use('/api/import',        require('./routes/import'));
+app.use('/api/budgets',       require('./routes/budgets'));
 
 // ── Serve built frontend in production ────────────────────────────────────────
 const PUBLIC_DIR = path.join(__dirname, 'public');

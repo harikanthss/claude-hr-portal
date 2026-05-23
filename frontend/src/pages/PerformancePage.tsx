@@ -119,7 +119,7 @@ export default function PerformancePage() {
                 <div key={r.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid var(--border-light)' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                     <div className="avatar avatar-sm">{emp?.avatar||'?'}</div>
-                    <div><div style={{ fontWeight:600, fontSize:'0.875rem' }}>{emp?.name||'Unknown'}</div><div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{r.period} · Reviewed by {r.reviewerId}</div></div>
+                    <div><div style={{ fontWeight:600, fontSize:'0.875rem' }}>{emp?.name||'Unknown'}</div><div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{r.period} · Reviewed by {employees.find(e=>e.id===r.reviewerId)?.name || r.reviewerId}</div></div>
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                     <div style={{ textAlign:'right' }}><div style={{ fontSize:'1.25rem', fontWeight:800, color:'var(--primary)' }}>{r.overallScore}</div><div style={{ fontSize:'0.65rem', color:'var(--text-muted)' }}>Overall</div></div>

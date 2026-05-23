@@ -16,6 +16,30 @@ const ACTION_COLORS: Record<string, { color: string; bg: string }> = {
   check_out: { color: '#f59e0b', bg: '#fef9c3' },
 };
 
+
+const ACTION_LABELS: Record<string, string> = {
+  create: 'Created',
+  update: 'Updated',
+  delete: 'Deleted',
+  deactivate: 'Deactivated',
+  login: 'Logged in',
+  logout: 'Logged out',
+  approved: 'Approved leave',
+  rejected: 'Rejected leave',
+  change_password: 'Changed password',
+  forgot_password: 'Requested password reset',
+  reset_password: 'Reset password',
+  generate_payslips: 'Generated payslips',
+  upload: 'Uploaded document',
+  'check-in': 'Checked in',
+  'check-out': 'Checked out',
+};
+const humanAction = (action: string, resource: string) => {
+  const label = ACTION_LABELS[action];
+  if (label) return label;
+  return action.charAt(0).toUpperCase() + action.slice(1).replace(/_/g, ' ');
+};
+
 export default function AuditLogPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [filter, setFilter] = useState({ resource: '', action: '' });

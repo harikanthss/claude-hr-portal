@@ -97,7 +97,7 @@ export default function DocumentsPage() {
                 <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{new Date(doc.uploadedAt).toLocaleDateString()}</td>
                 <td>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <a href={`http://localhost:3001${doc.filePath}`} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm"><Download size={13} /></a>
+                    <a href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace('/api','')}${doc.filePath}`} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm"><Download size={13} /></a>
                     <button className="btn btn-secondary btn-sm" onClick={() => handleDelete(doc.id)}><Trash2 size={13} /></button>
                   </div>
                 </td>

@@ -23,6 +23,11 @@ const PAGE_LINKS = [
   { page: 'leaderboard', label: 'Leaderboard',          icon: <Trophy size={15} />,     color: '#f59e0b', category: 'Pages' },
   { page: 'payslips',    label: 'Payslips',             icon: <FileText size={15} />,   color: '#22c55e', category: 'Pages' },
   { page: 'profile',     label: 'My Profile',           icon: <Users size={15} />,      color: '#94a3b8', category: 'Pages' },
+  { page: 'budget',      label: 'Budget Tracker',        icon: <BarChart3 size={15} />,  color: '#22c55e', category: 'Pages' },
+  { page: 'compliance',  label: 'Compliance Reports',    icon: <FileText size={15} />,   color: '#ef4444', category: 'Pages' },
+  { page: 'shifts',      label: 'Shift Scheduling',      icon: <Clock size={15} />,      color: '#8b5cf6', category: 'Pages' },
+  { page: 'documents',   label: 'Document Vault',        icon: <FileText size={15} />,   color: '#06b6d4', category: 'Pages' },
+  { page: 'audit',       label: 'Audit Log',             icon: <FileText size={15} />,   color: '#94a3b8', category: 'Pages' },
 ];
 
 export default function GlobalSearch({ open, onClose, onNavigate }: GlobalSearchProps) {

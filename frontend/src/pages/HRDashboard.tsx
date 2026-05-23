@@ -1,5 +1,7 @@
+import { PageLoader } from '../components/ui/SkeletonLoader';
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
+import { useLiveDashboard } from '../hooks/useLiveDashboard';
 import StatCard from '../components/ui/StatCard';
 import AIInsightCard from '../components/ai/AIInsightCard';
 import {
@@ -10,6 +12,7 @@ import { Users, Clock, Calendar, TrendingUp, CheckCircle2, AlertCircle, XCircle,
 
 export default function HRDashboard() {
   const { employees, leaveRequests } = useStore();
+  const { stats: liveStats, lastUpdated } = useLiveDashboard(60000);
   const [perfData, setPerfData] = useState<any[]>([]);
   const [deptData, setDeptData] = useState<any[]>([]);
   const [insights, setInsights] = useState<any[]>([]);
@@ -34,7 +37,7 @@ export default function HRDashboard() {
   const active = employees.filter(e => e.status === 'active').length;
   const onLeave = employees.filter(e => e.status === 'on_leave').length;
   const inactive = employees.filter(e => e.status === 'inactive').length;
-  const pending = leaveRequests.filter(r => r.status === 'pending').length;
+  const pending = liveStats?.pendingLeaves ?? leaveRequests.filter(r => r.status === 'pending').length;
   const avgPerf = employees.length > 0 ? Math.round(employees.reduce((s, e) => s + e.performance, 0) / employees.length) : 0;
   const avgAtt = employees.length > 0 ? Math.round(employees.reduce((s, e) => s + e.attendance, 0) / employees.length) : 0;
 
@@ -71,6 +74,13 @@ export default function HRDashboard() {
 
   return (
     <div className="animate-fade">
+      {lastUpdated && (
+        <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:8 }}>
+          <span style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>
+            🔄 Live · Updated {lastUpdated.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' })}
+          </span>
+        </div>
+      )}
       {/* KPI Stats */}
       <div className="grid-4 mb-6">
         <StatCard label="Total Employees" value={employees.length} change={8.3} icon={<Users size={20} />} iconBg="#dcfce7" iconColor="#16a34a" />

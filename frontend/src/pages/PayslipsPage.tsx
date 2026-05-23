@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
 import { Download, RefreshCw, CheckCircle2, AlertCircle, Zap, FileText } from 'lucide-react';
+import { exportPayslips } from '../utils/exportCSV';
 
 interface Payslip { id:string; employeeId:string; month:string; year:number; basicSalary:number; hra:number; conveyance:number; medical:number; bonus:number; pf:number; tax:number; netSalary:number; generatedOn?:string; }
 
@@ -126,7 +127,10 @@ export default function PayslipsPage() {
                     <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>{currentUser?.name} · {currentUser?.department}</span>
                   </div>
                 </div>
-                <button className="btn btn-primary" onClick={()=>window.print()}><Download size={15}/> Download PDF</button>
+                <div style={{ display:'flex', gap:8 }}>
+                  <button className="btn btn-secondary" onClick={()=>exportPayslips(payslips,[])} title="Export all payslips to CSV">⬇ Export CSV</button>
+                  <button className="btn btn-primary" onClick={()=>window.print()}><Download size={15}/> Download PDF</button>
+                </div>
               </div>
 
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24, marginBottom:24 }}>

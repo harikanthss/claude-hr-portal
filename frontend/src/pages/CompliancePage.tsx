@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Download, FileText, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
+import { downloadCSV } from '../utils/exportCSV';
 
 export default function CompliancePage() {
   const { employees } = useStore();
@@ -89,7 +90,7 @@ export default function CompliancePage() {
               <div style={{ textAlign:'right' }}>
                 <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginBottom:4 }}>Amount</div>
                 <div style={{ fontWeight:800, color:report.color, fontSize:'1rem' }}>₹{report.amount.toLocaleString('en-IN')}</div>
-                <button className="btn btn-secondary btn-sm" style={{ marginTop:8 }} onClick={()=>window.print()}>
+                <button className="btn btn-secondary btn-sm" style={{ marginTop:8 }} onClick={() => downloadCSV('compliance-report', reports.map(r => ({ Report: r.name, Filing: r.status, Due: r.due, Form: r.form, 'Amount (₹)': r.amount })))}>
                   <Download size={12}/> Export
                 </button>
               </div>

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
+import { useLiveDashboard } from '../hooks/useLiveDashboard';
 import StatCard from '../components/ui/StatCard';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import { Users, TrendingUp, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function ManagerDashboard() {
   const { employees, leaveRequests } = useStore();
+  const { stats: liveStats, lastUpdated } = useLiveDashboard(60000);
   const [deptData, setDeptData] = useState<any[]>([]);
   const [insights, setInsights] = useState<any[]>([]);
 
@@ -32,6 +34,11 @@ export default function ManagerDashboard() {
 
   return (
     <div className="animate-fade">
+      {lastUpdated && (
+        <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:8 }}>
+          <span style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>🔄 Live · Updated {lastUpdated.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</span>
+        </div>
+      )}
       <div className="grid-4 mb-6">
         <StatCard label="Team Size" value={myTeam.length} change={5.2} icon={<Users size={20} />} iconBg="#f3e8ff" iconColor="#7c3aed" />
         <StatCard label="Avg Performance" value={avgPerf} suffix="/100" change={3.1} icon={<TrendingUp size={20} />} iconBg="#dcfce7" iconColor="#16a34a" />

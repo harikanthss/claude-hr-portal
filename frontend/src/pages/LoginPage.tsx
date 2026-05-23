@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore, api } from '../services/store';
+import { toast } from '../components/ui/Toast';
 import { Eye, EyeOff, AlertCircle, ArrowRight, ArrowLeft, CheckCircle2, Mail, Lock } from 'lucide-react';
 
 const DEMO_ACCOUNTS = [
@@ -25,7 +26,7 @@ export default function LoginPage({ onBack }: { onBack?: () => void }) {
     setError(''); setLoading(true);
     await new Promise(r => setTimeout(r, 600));
     const ok = await login(email, password);
-    if (!ok) setError('Invalid credentials. Try a demo account below.');
+    if (!ok) { setError('Invalid credentials. Try a demo account below.'); toast.error('Login failed', 'Invalid email or password.'); }
     setLoading(false);
   };
 

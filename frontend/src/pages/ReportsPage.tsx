@@ -1,3 +1,4 @@
+import { PageLoader } from '../components/ui/SkeletonLoader';
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
 import AIInsightCard from '../components/ai/AIInsightCard';
@@ -7,6 +8,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
 import { Bell, Download, FileText, Zap, Trophy, User, Mail, Phone, MapPin, Edit2, Check, X, Shield, RefreshCw, Lock } from 'lucide-react';
+import { downloadCSV as exportToCSV } from '../utils/exportCSV';
 
 const BADGES_MAP: Record<string, any> = {
   perfect_attendance: { name: 'Perfect Attendance', icon: '🏆', color: '#22c55e' },
@@ -27,7 +29,7 @@ export default function ReportsPage() {
     api.get('/reports/summary').then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="animate-fade"><div style={{ textAlign:'center', padding:60, color:'var(--text-muted)' }}>Loading reports...</div></div>;
+  if (loading) return <PageLoader />;
   if (!data) return <div className="animate-fade"><div style={{ textAlign:'center', padding:60, color:'var(--text-muted)' }}>Unable to load reports.</div></div>;
 
   const leaveTypeStats = [
@@ -52,7 +54,10 @@ export default function ReportsPage() {
       </div>
 
       <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:16, gap:10 }}>
-        <button className="btn btn-secondary" onClick={() => window.print()}><Download size={15} /> Export PDF</button>
+        <div style={{ display:'flex', gap:8 }}>
+        <button className="btn btn-secondary" onClick={() => { if(data) exportToCSV('hr-report', [{ headcount:data.headcount, avgSalary:data.avgSalary, totalLeaves:data.totalLeavesTaken, approvedExpenses:data.approvedExpenses, totalExpenses:data.totalExpenses }]); }}><Download size={15}/> Export CSV</button>
+        <button className="btn btn-secondary" onClick={() => window.print()}><FileText size={15}/> Print</button>
+      </div>
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:20 }}>

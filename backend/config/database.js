@@ -165,18 +165,24 @@ async function seedIfEmpty(dbConn, isPg) {
   for (const u of users) await run(dbConn, isPg, 'INSERT INTO users (id,name,email,password,role,avatar) VALUES (?,?,?,?,?,?)', u);
 
   const emps = [
-    ['e1','Kiran Patel','employee@grevya.com','Engineering','Frontend Developer','active','2022-03-15',85000,92,98,'KP','+91 98765 43210','Bangalore',2840,45,'demo-mgr'],
-    ['e2','Sneha Rao','sneha@grevya.com','Design','UX Designer','active','2021-08-10',78000,88,95,'SR','+91 98765 00001','Mumbai',3120,62,'demo-mgr'],
+    // Top level: no manager (CEO-level HR and Engineering heads)
     ['e3','Ravi Nair','manager@grevya.com','Engineering','Engineering Manager','active','2020-01-20',145000,95,99,'RN','+91 98765 00002','Bangalore',4200,90,null],
     ['e4','Divya Kumar','hr@grevya.com','HR','HR Manager','active','2019-11-05',110000,90,96,'DK','+91 98765 00003','Delhi',2680,38,null],
-    ['e5','Arjun Mehta','arjun@grevya.com','Sales','Account Executive','on_leave','2023-01-10',65000,75,85,'AM','+91 98765 00004','Mumbai',1620,12,'demo-mgr'],
-    ['e6','Priya Sharma','priya@grevya.com','Design','UI Designer','active','2023-01-10',78000,85,91,'PS','+91 65432 10987','Hyderabad',1950,28,'demo-mgr'],
-    ['e7','Rahul Gupta','rahul@grevya.com','Finance','Financial Analyst','active','2022-06-01',88000,87,93,'RG','+91 32109 87654','Kolkata',2100,22,'demo-mgr'],
-    ['e8','Ananya Singh','ananya@grevya.com','Marketing','Marketing Specialist','active','2023-04-15',70000,83,92,'AS','+91 21098 76543','Bangalore',1780,18,'demo-mgr'],
-    ['e9','Vikram Joshi','vikram@grevya.com','Engineering','DevOps Engineer','active','2021-12-01',92000,94,98,'VJ','+91 10987 65432','Hyderabad',3800,75,'demo-mgr'],
-    ['e10','Meera Iyer','meera@grevya.com','Operations','Operations Manager','inactive','2020-05-10',98000,76,78,'MI','+91 09876 54321','Mumbai',890,3,'demo-mgr'],
-    ['e11','Suresh Pillai','suresh@grevya.com','Sales','Sales Executive','active','2023-07-20',62000,81,89,'SP','+91 98765 12345','Chennai',1340,15,'demo-mgr'],
-    ['e12','Pooja Reddy','pooja@grevya.com','Design','Product Designer','active','2022-02-14',81000,90,95,'PR','+91 87654 09876','Pune',2560,41,'demo-mgr'],
+    // Engineering team — report to Ravi (e3)
+    ['e1','Kiran Patel','employee@grevya.com','Engineering','Frontend Developer','active','2022-03-15',85000,92,98,'KP','+91 98765 43210','Bangalore',2840,45,'e3'],
+    ['e9','Vikram Joshi','vikram@grevya.com','Engineering','DevOps Engineer','active','2021-12-01',92000,94,98,'VJ','+91 10987 65432','Hyderabad',3800,75,'e3'],
+    // Design team — report to Ravi (e3)
+    ['e2','Sneha Rao','sneha@grevya.com','Design','UX Designer','active','2021-08-10',78000,88,95,'SR','+91 98765 00001','Mumbai',3120,62,'e3'],
+    ['e6','Priya Sharma','priya@grevya.com','Design','UI Designer','active','2023-01-10',78000,85,91,'PS','+91 65432 10987','Hyderabad',1950,28,'e3'],
+    ['e12','Pooja Reddy','pooja@grevya.com','Design','Product Designer','active','2022-02-14',81000,90,95,'PR','+91 87654 09876','Pune',2560,41,'e3'],
+    // Sales team — report to Divya (e4)
+    ['e5','Arjun Mehta','arjun@grevya.com','Sales','Account Executive','on_leave','2023-01-10',65000,75,85,'AM','+91 98765 00004','Mumbai',1620,12,'e4'],
+    ['e11','Suresh Pillai','suresh@grevya.com','Sales','Sales Executive','active','2023-07-20',62000,81,89,'SP','+91 98765 12345','Chennai',1340,15,'e4'],
+    // Finance & Marketing — report to Divya (e4)
+    ['e7','Rahul Gupta','rahul@grevya.com','Finance','Financial Analyst','active','2022-06-01',88000,87,93,'RG','+91 32109 87654','Kolkata',2100,22,'e4'],
+    ['e8','Ananya Singh','ananya@grevya.com','Marketing','Marketing Specialist','active','2023-04-15',70000,83,92,'AS','+91 21098 76543','Bangalore',1780,18,'e4'],
+    // Operations — inactive
+    ['e10','Meera Iyer','meera@grevya.com','Operations','Operations Manager','inactive','2020-05-10',98000,76,78,'MI','+91 09876 54321','Mumbai',890,3,'e4'],
   ];
   for (const e of emps) await run(dbConn, isPg, 'INSERT INTO employees (id,name,email,department,position,status,joinDate,salary,performance,attendance,avatar,phone,location,points,streak,managerId) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', e);
 
@@ -285,6 +291,44 @@ async function seedIfEmpty(dbConn, isPg) {
     await run(dbConn, isPg, 'UPDATE employees SET performance=? WHERE id=?', [overall, empId]);
   }
 
+
+
+  // Seed calendar events + Indian holidays 2024
+  const calendarSeeds = [
+    [id('ev'),'Holi','2024-03-25',null,'holiday','#f59e0b','Indian National Holiday','system'],
+    [id('ev'),'Good Friday','2024-03-29',null,'holiday','#3b82f6','Indian National Holiday','system'],
+    [id('ev'),'Dr. Ambedkar Jayanti','2024-04-14',null,'holiday','#8b5cf6','Indian National Holiday','system'],
+    [id('ev'),'Independence Day','2024-08-15',null,'holiday','#ef4444','Indian National Holiday','system'],
+    [id('ev'),'Gandhi Jayanti','2024-10-02',null,'holiday','#f59e0b','Indian National Holiday','system'],
+    [id('ev'),'Diwali','2024-11-01',null,'holiday','#f97316','Indian National Holiday','system'],
+    [id('ev'),'Christmas Day','2024-12-25',null,'holiday','#ef4444','Indian National Holiday','system'],
+    [id('ev'),'Q2 Planning Meeting','2024-04-01',null,'meeting','#3b82f6','Quarterly planning','demo-hr'],
+    [id('ev'),'Annual Performance Reviews','2024-03-31',null,'deadline','#ef4444','Q1 review deadline','demo-hr'],
+    [id('ev'),'Team Building Day','2024-04-20',null,'event','#22c55e','Annual team outing','demo-hr'],
+    [id('ev'),'Payroll Processing','2024-03-28',null,'deadline','#7c3aed','March payroll deadline','demo-hr'],
+    [id('ev'),'New Employee Onboarding','2024-04-01',null,'event','#06b6d4','Deepak and Lavanya joining','demo-hr'],
+  ];
+  for (const row of calendarSeeds) {
+    try { await run(dbConn, isPg, 'INSERT INTO calendar_events (id,title,date,endDate,type,color,description,createdBy) VALUES (?,?,?,?,?,?,?,?)', row); } catch {}
+  }
+  // Seed documents
+  const docSeeds = [
+    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      ['doc-1',null,'Employee Handbook 2024.pdf','application/pdf','policy','/uploads/sample-handbook.pdf',245760,'Divya Kumar','2024-01-15T10:00:00','Company policies and procedures']],
+    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      ['doc-2',null,'Leave Policy 2024.pdf','application/pdf','policy','/uploads/leave-policy.pdf',102400,'Divya Kumar','2024-01-15T10:00:00','Leave entitlements and application process']],
+    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      ['doc-3',null,'Code of Conduct.pdf','application/pdf','policy','/uploads/code-of-conduct.pdf',88064,'Divya Kumar','2024-02-01T09:00:00','Workplace conduct guidelines']],
+    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      ['doc-4','e1','Kiran_Patel_Offer_Letter.pdf','application/pdf','contract','/uploads/offer-e1.pdf',65536,'Divya Kumar','2022-03-10T10:00:00','Offer letter for Kiran Patel']],
+    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      ['doc-5','e2','Sneha_Rao_Appraisal_2023.pdf','application/pdf','appraisal','/uploads/appraisal-e2.pdf',78432,'Ravi Nair','2024-01-20T14:00:00','Annual appraisal document 2023']],
+    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      ['doc-6',null,'IT Security Policy.pdf','application/pdf','policy','/uploads/it-security.pdf',112640,'Divya Kumar','2024-02-15T11:00:00','Information security guidelines']],
+  ];
+  for (const [sql, params] of docSeeds) {
+    try { await run(dbConn, isPg, sql, params); } catch {}
+  }
   console.log('✅ Database seeded successfully');
 }
 

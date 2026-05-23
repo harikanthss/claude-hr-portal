@@ -43,7 +43,7 @@ export const useStore = create<AppState>((set, get) => ({
   employees: [],
   leaveRequests: [],
   notifications: [],
-  darkMode: false,
+  darkMode: localStorage.getItem('darkMode') === 'true',
   sidebarOpen: true,
 
   fetchInitialData: async () => {
@@ -88,7 +88,11 @@ export const useStore = create<AppState>((set, get) => ({
     set({ currentUser: null, employees: [], leaveRequests: [], notifications: [] });
   },
 
-  toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
+  toggleDarkMode: () => set(s => {
+    const next = !s.darkMode;
+    localStorage.setItem('darkMode', String(next));
+    return { darkMode: next };
+  }),
   toggleSidebar: () => set(s => ({ sidebarOpen: !s.sidebarOpen })),
 
   addEmployee: async (emp) => {
@@ -96,8 +100,17 @@ export const useStore = create<AppState>((set, get) => ({
       method: 'POST', headers: getHeaders(), body: JSON.stringify(emp)
     });
     if (res.ok) {
-      const newEmp = await res.json();
-      set(s => ({ employees: [...s.employees, newEmp] }));
+      const created = await res.json();
+      // Fetch full employee object since POST only returns {id, name, email}
+      const fullRes = await fetch(`${API_URL}/employees/${created.id}`, { headers: getHeaders() });
+      if (fullRes.ok) {
+        const fullEmp = await fullRes.json();
+        set(s => ({ employees: [...s.employees, fullEmp] }));
+      } else {
+        // Refresh all employees as fallback
+        const allRes = await fetch(`${API_URL}/employees`, { headers: getHeaders() });
+        if (allRes.ok) { const all = await allRes.json(); set({ employees: all }); }
+      }
     }
   },
 
@@ -120,36 +133,44 @@ export const useStore = create<AppState>((set, get) => ({
 
   approveLeave: async (id, comments) => {
     const user = get().currentUser;
-    const req = { status: 'approved', approvedBy: user?.name, comments };
     const res = await fetch(`${API_URL}/leave-requests/${id}`, {
-      method: 'PUT', headers: getHeaders(), body: JSON.stringify(req)
+      method: 'PUT', headers: getHeaders(),
+      body: JSON.stringify({ status: 'approved', comments })
     });
     if (res.ok) {
-      const upd = await res.json();
-      set(s => ({ leaveRequests: s.leaveRequests.map(r => r.id === id ? upd : r) }));
+      set(s => ({ leaveRequests: s.leaveRequests.map(r =>
+        r.id === id ? { ...r, status: 'approved', approvedBy: user?.name || '', comments: comments || '' } : r
+      )}));
     }
   },
 
   rejectLeave: async (id, comments) => {
     const user = get().currentUser;
-    const req = { status: 'rejected', approvedBy: user?.name, comments };
     const res = await fetch(`${API_URL}/leave-requests/${id}`, {
-      method: 'PUT', headers: getHeaders(), body: JSON.stringify(req)
+      method: 'PUT', headers: getHeaders(),
+      body: JSON.stringify({ status: 'rejected', comments })
     });
     if (res.ok) {
-      const upd = await res.json();
-      set(s => ({ leaveRequests: s.leaveRequests.map(r => r.id === id ? upd : r) }));
+      set(s => ({ leaveRequests: s.leaveRequests.map(r =>
+        r.id === id ? { ...r, status: 'rejected', approvedBy: user?.name || '', comments: comments || '' } : r
+      )}));
     }
   },
 
   applyLeave: async (request) => {
-    const req = { ...request, status: 'pending', appliedOn: new Date().toISOString().split('T')[0] };
+    const req = { ...request, status: 'pending', appliedOn: new Date().toISOString() };
     const res = await fetch(`${API_URL}/leave-requests`, {
       method: 'POST', headers: getHeaders(), body: JSON.stringify(req)
     });
     if (res.ok) {
-      const upd = await res.json();
-      set(s => ({ leaveRequests: [upd, ...s.leaveRequests] }));
+      const created = await res.json();
+      // Build local object since backend only returns {id}
+      const newLeave = {
+        ...req,
+        id: created.id || Date.now().toString(),
+        status: 'pending' as const,
+      };
+      set(s => ({ leaveRequests: [newLeave as any, ...s.leaveRequests] }));
     }
   },
 

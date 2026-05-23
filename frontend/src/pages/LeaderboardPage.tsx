@@ -1,4 +1,6 @@
+import { PageLoader } from '../components/ui/SkeletonLoader';
 import React, { useState, useEffect } from 'react';
+import { downloadCSV } from '../utils/exportCSV';
 import { useStore, api } from '../services/store';
 import AIInsightCard from '../components/ai/AIInsightCard';
 import StatCard from '../components/ui/StatCard';
@@ -27,13 +29,16 @@ export default function LeaderboardPage() {
     api.get('/leaderboard').then(d => { setRanked(Array.isArray(d) ? d : []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="animate-fade"><div style={{ textAlign:'center', padding:60, color:'var(--text-muted)' }}>Loading leaderboard...</div></div>;
+  if (loading) return <PageLoader />;
 
   const top3 = [ranked[1], ranked[0], ranked[2]].filter(Boolean);
   const podiumOrder = [{ h:140, medal:'🥈', bg:'linear-gradient(135deg,#94a3b8,#64748b)' }, { h:170, medal:'🥇', bg:'linear-gradient(135deg,#fbbf24,#d97706)' }, { h:120, medal:'🥉', bg:'linear-gradient(135deg,#cd7c3b,#a16207)' }];
 
   return (
     <div className="animate-fade">
+      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:16 }}>
+        <button className="btn btn-secondary btn-sm" onClick={() => downloadCSV('leaderboard', ranked.map(e => ({ Rank:e.rank, Name:e.name, Department:e.department, Points:e.points, Streak:e.streak, Performance:e.performance, Badges:e.badges?.join(', ') })))}>⬇ Export CSV</button>
+      </div>
       {/* Podium */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1.1fr 1fr', gap:16, marginBottom:28 }}>
         {top3.map((emp, idx) => {

@@ -15,6 +15,14 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Apply dark mode immediately to prevent flash
+      try {
+        if (localStorage.getItem('darkMode') === 'true') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch(e) {}
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {

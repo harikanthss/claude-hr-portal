@@ -1,3 +1,4 @@
+import { exportEmployees } from '../utils/exportCSV';
 import React, { useState } from 'react';
 import { useStore } from '../services/store';
 import { Employee } from '../types';
@@ -32,6 +33,38 @@ export default function EmployeesPage() {
   const isHR = currentUser?.role === 'hr_manager';
 
   const [search, setSearch] = useState('');
+
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<any>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/import/employees`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form
+      });
+      const data = await res.json();
+      setImportResult(data);
+      if (data.results?.some((r: any) => r.status === 'created')) {
+        // Refresh employee list
+        const empRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/employees`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (empRes.ok) { const emps = await empRes.json(); useStore.setState({ employees: emps }); }
+      }
+    } catch { setImportResult({ message: 'Import failed. Please check your CSV format.' }); }
+    finally { setImporting(false); e.target.value = ''; }
+  };
+
+  const downloadTemplate = () => {
+    window.location.href = `${(import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace('/api','')}/api/import/template`;
+  };
   const [dept, setDept] = useState('All');
   const [status, setStatus] = useState('All');
   const [sortKey, setSortKey] = useState<keyof Employee>('name');
@@ -145,6 +178,12 @@ export default function EmployeesPage() {
 
   return (
     <div className="animate-fade">
+      {importResult && (
+        <div style={{ marginBottom:16, padding:'12px 16px', borderRadius:10, background: importResult.message?.includes('failed') ? '#fee2e2' : '#dcfce7', border:`1px solid ${importResult.message?.includes('failed') ? '#fecaca' : '#86efac'}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <span style={{ fontSize:'0.85rem', fontWeight:600, color: importResult.message?.includes('failed') ? '#dc2626' : '#16a34a' }}>{importResult.message}</span>
+          <button onClick={() => setImportResult(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'1.1rem' }}>×</button>
+        </div>
+      )}
       {/* Filters */}
       <div className="filter-row">
         <div className="search-wrap" style={{ flex: 1, maxWidth: 320 }}>
@@ -162,6 +201,12 @@ export default function EmployeesPage() {
         </select>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{filtered.length} results</span>
+          <button className="btn btn-secondary" onClick={() => exportEmployees(employees)} style={{ marginRight:8 }}><span>⬇</span> Export CSV</button>
+          <input ref={fileInputRef} type="file" accept=".csv" onChange={handleImport} style={{ display:'none' }}/>
+          <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+            {importing ? '⏳ Importing...' : '⬆ Import CSV'}
+          </button>
+          <button className="btn btn-secondary" onClick={downloadTemplate} title="Download CSV template">📋 Template</button>
           <button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Add Employee</button>
         </div>
       </div>

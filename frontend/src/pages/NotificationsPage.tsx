@@ -1,3 +1,4 @@
+import { useRealTimeNotifications } from '../hooks/useRealTimeNotifications';
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
 import AIInsightCard from '../components/ai/AIInsightCard';
@@ -21,6 +22,7 @@ const BADGES_MAP: Record<string, any> = {
 // ===================== NOTIFICATIONS =====================
 export default function NotificationsPage() {
   const { notifications, markNotificationRead, markAllRead } = useStore();
+  useRealTimeNotifications(); // polls every 30s
   const unread = notifications.filter((n: any) => !n.read && !n.isRead).length;
 
   const typeIcon: Record<string, React.ReactNode> = {

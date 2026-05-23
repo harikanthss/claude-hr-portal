@@ -23,6 +23,7 @@ import AIInsightsPage from './pages/AIInsightsPage';
 import ProfilePage from './pages/ProfilePage';
 import PayslipsPage from './pages/PayslipsPage';
 import CompliancePage from './pages/CompliancePage';
+import BudgetPage from './pages/BudgetPage';
 import DocumentsPage from './pages/DocumentsPage';
 import ShiftsPage from './pages/ShiftsPage';
 import AuditLogPage from './pages/AuditLogPage';
@@ -56,6 +57,7 @@ function PageContent({ page }: { page: string }) {
   if (page === 'shifts') return <ShiftsPage />;
   if (page === 'audit') return <AuditLogPage />;
   if (page === 'compliance') return <CompliancePage />;
+  if (page === 'budget') return <BudgetPage />;
   return <HRDashboard />;
 }
 
@@ -131,6 +133,7 @@ const PAGE_META: Record<string, { title: string; desc: string }> = {
   shifts: { title: 'Shift Scheduling', desc: 'Schedule and manage employee shifts' },
   audit: { title: 'Audit Log', desc: 'Track all system activities and changes' },
   compliance: { title: 'Compliance Reports', desc: 'PF, ESI, TDS and statutory filing reports' },
+  budget: { title: 'Budget Tracker', desc: 'Department budget allocation and tracking' },
 };
 
 function PageHeader({ page }: { page: string }) {

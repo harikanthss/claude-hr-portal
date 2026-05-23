@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
+import { useLiveDashboard } from '../hooks/useLiveDashboard';
 import StatCard from '../components/ui/StatCard';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import { TrendingUp, Clock, Star, Flame } from 'lucide-react';
@@ -15,6 +16,7 @@ const BADGES_MAP: Record<string, any> = {
 
 export default function EmployeeDashboard() {
   const { currentUser, leaveRequests } = useStore();
+  const { lastUpdated } = useLiveDashboard(60000);
   const [profile, setProfile] = useState<any>(null);
   const [payslips, setPayslips] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);

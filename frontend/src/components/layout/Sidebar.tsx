@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, Calendar, Clock, BarChart3,
   LogOut, ChevronLeft, ChevronRight, Bell, User, Trophy, Zap,
   FileText, Home, Briefcase, GitBranch, FolderOpen, Shield, Sun
-} from 'lucide-react';
+, TrendingUp } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -35,7 +35,7 @@ const NAV_SECTIONS = [
       { label: 'Expenses',         icon: <FileText size={18} />,  page: 'expenses',    roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
       { label: 'Calendar',         icon: <Calendar size={18} />,  page: 'calendar',    roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
       { label: 'Reports',          icon: <FileText size={18} />,  page: 'reports',     roles: ['hr_manager', 'manager'] as UserRole[] },
-      { label: 'Payslips',         icon: <FileText size={18} />,  page: 'payslips',    roles: ['employee'] as UserRole[] },
+      { label: 'Payslips',         icon: <FileText size={18} />,  page: 'payslips',    roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
       { label: 'Documents',        icon: <FolderOpen size={18} />, page: 'documents',   roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
       { label: 'Shifts',           icon: <Sun size={18} />,        page: 'shifts',      roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
     ],
@@ -47,6 +47,7 @@ const NAV_SECTIONS = [
       { label: 'AI Insights',   icon: <Zap size={18} />,    page: 'ai',            roles: ['hr_manager', 'manager'] as UserRole[] },
       { label: 'Audit Log',     icon: <Shield size={18} />, page: 'audit',         roles: ['hr_manager', 'manager'] as UserRole[] },
       { label: 'Compliance',     icon: <Shield size={18} />, page: 'compliance',    roles: ['admin', 'hr_manager'] as UserRole[] },
+      { label: 'Budget Tracker',  icon: <TrendingUp size={18} />, page: 'budget',       roles: ['admin', 'hr_manager'] as UserRole[] },
       { label: 'Notifications', icon: <Bell size={18} />,   page: 'notifications', roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
       { label: 'Profile',       icon: <User size={18} />,   page: 'profile',       roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
     ],

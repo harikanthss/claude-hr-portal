@@ -1,3 +1,4 @@
+import { PageLoader } from '../components/ui/SkeletonLoader';
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
 import AIInsightCard from '../components/ai/AIInsightCard';
