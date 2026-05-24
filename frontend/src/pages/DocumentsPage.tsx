@@ -26,6 +26,17 @@ export default function DocumentsPage() {
 
   const handleUpload = async () => {
     if (!file) return;
+    const maxMB = 10;
+    if (file.size > maxMB * 1024 * 1024) {
+      alert(`File too large. Maximum size is ${maxMB}MB.`);
+      return;
+    }
+    const allowed = ['pdf','doc','docx','xls','xlsx','png','jpg','jpeg','zip','txt'];
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!allowed.includes(ext)) {
+      alert(`File type .${ext} is not allowed. Allowed types: ${allowed.join(', ')}`);
+      return;
+    }
     const formData = new FormData();
     formData.append('file', file);
     formData.append('category', form.category);

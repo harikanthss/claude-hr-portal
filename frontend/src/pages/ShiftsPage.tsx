@@ -1,3 +1,4 @@
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
 import { Clock, Plus, X, ChevronLeft, ChevronRight, Sun, Moon, Sunset } from 'lucide-react';
@@ -14,9 +15,17 @@ const SHIFT_TYPES: Record<string, { label: string; icon: React.ReactNode; color:
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+
+const getMonday = (d = new Date()) => {
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff)).toISOString().split('T')[0];
+};
+
 export default function ShiftsPage() {
   const { currentUser, employees } = useStore();
   const isAdmin = currentUser?.role !== 'employee';
+  const [confirmDeleteShift, setConfirmDeleteShift] = useState<string|null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [weekStart, setWeekStart] = useState(() => {
     const d = new Date(2024, 2, 25);
@@ -167,6 +176,20 @@ export default function ShiftsPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+      open={!!confirmDeleteShift}
+      title="Delete Shift"
+      message="Are you sure you want to delete this shift? This cannot be undone."
+      confirmLabel="Delete Shift"
+      onConfirm={async () => {
+        if (confirmDeleteShift) {
+          await api.del(`/shifts/${confirmDeleteShift}`);
+          setShifts((prev: any[]) => prev.filter((s: any) => s.id !== confirmDeleteShift));
+          setConfirmDeleteShift(null);
+        }
+      }}
+      onCancel={() => setConfirmDeleteShift(null)}
+      />
     </div>
   );
 }

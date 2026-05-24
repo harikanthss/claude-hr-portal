@@ -8,7 +8,7 @@ interface Payslip { id:string; employeeId:string; month:string; year:number; bas
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 export default function PayslipsPage() {
-  const { currentUser } = useStore();
+  const { currentUser, employees } = useStore();
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [selected, setSelected] = useState<Payslip|null>(null);
   const [loading, setLoading] = useState(true);
@@ -83,7 +83,7 @@ export default function PayslipsPage() {
                 <div style={{ display:'flex', alignItems:'center', gap:8, color:'#dc2626', fontSize:'0.85rem' }}><AlertCircle size={15}/> {genResult.error}</div>
               ) : (
                 <div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, color:'#16a34a', fontSize:'0.875rem', fontWeight:600, marginBottom:8 }}><CheckCircle2 size={15}/> {genResult.message}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, color:'#16a34a', fontSize:'0.875rem', fontWeight:600, marginBottom:8 }}><CheckCircle2 size={15}/> {genResult.message?.replace("Payslips processed for", "✅ Payslips generated for")}</div>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                     {genResult.results?.map((r: any) => (
                       <span key={r.name} style={{ fontSize:'0.7rem', padding:'3px 8px', borderRadius:20, background:r.status==='generated'?'#dcfce7':'#f1f5f9', color:r.status==='generated'?'#16a34a':'#64748b', border:`1px solid ${r.status==='generated'?'#86efac':'#e2e8f0'}` }}>
@@ -128,7 +128,7 @@ export default function PayslipsPage() {
                   </div>
                 </div>
                 <div style={{ display:'flex', gap:8 }}>
-                  <button className="btn btn-secondary" onClick={()=>exportPayslips(payslips,[])} title="Export all payslips to CSV">⬇ Export CSV</button>
+                  <button className="btn btn-secondary" onClick={()=>exportPayslips(payslips, employees)} title="Export all payslips to CSV">⬇ Export CSV</button>
                   <button className="btn btn-primary" onClick={()=>window.print()}><Download size={15}/> Download PDF</button>
                 </div>
               </div>

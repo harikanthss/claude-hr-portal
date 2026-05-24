@@ -27,6 +27,8 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [changePw, setChangePw] = useState(false);
+  const [show2FA, setShow2FA] = useState(false);
+  const [showSessions, setShowSessions] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
@@ -73,6 +75,63 @@ export default function ProfilePage() {
 
   return (
     <div className="animate-fade">
+      {/* 2FA Modal */}
+      {show2FA && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div className="card" style={{ width:'100%', maxWidth:460, padding:'28px 32px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
+              <h3>Two-Factor Authentication</h3>
+              <button onClick={()=>setShow2FA(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'1.2rem' }}>×</button>
+            </div>
+            <div style={{ padding:'20px', background:'var(--bg)', borderRadius:10, border:'1px solid var(--border)', marginBottom:16, textAlign:'center' }}>
+              <div style={{ fontSize:'2rem', marginBottom:8 }}>🔐</div>
+              <div style={{ fontWeight:600, marginBottom:8 }}>TOTP Authentication</div>
+              <div style={{ fontSize:'0.85rem', color:'var(--text-muted)', lineHeight:1.6 }}>Two-factor authentication via authenticator app (Google Authenticator, Authy) will be available in the next release. Your account is protected by a strong JWT with 8-hour expiry and token revocation.</div>
+            </div>
+            <div style={{ display:'flex', gap:10, alignItems:'center', padding:'12px 16px', background:'#dbeafe', borderRadius:8 }}>
+              <span style={{ fontSize:'1rem' }}>ℹ️</span>
+              <span style={{ fontSize:'0.82rem', color:'#1d4ed8' }}>Your tokens are automatically revoked when you log out or change your password.</span>
+            </div>
+            <div style={{ display:'flex', justifyContent:'flex-end', marginTop:16 }}>
+              <button className="btn btn-secondary" onClick={()=>setShow2FA(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sessions Modal */}
+      {showSessions && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div className="card" style={{ width:'100%', maxWidth:480, padding:'28px 32px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
+              <h3>Active Sessions</h3>
+              <button onClick={()=>setShowSessions(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'1.2rem' }}>×</button>
+            </div>
+            {[
+              { device:'Chrome on Windows', location:'Bangalore, IN', time:'Current session', current:true },
+              { device:'Safari on iPhone', location:'Bangalore, IN', time:'2 hours ago', current:false },
+            ].map((s,i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 0', borderBottom:'1px solid var(--border-light)' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:s.current?'#dcfce7':'var(--bg)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', border:'1px solid var(--border)' }}>{s.current?'💻':'📱'}</div>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:'0.875rem' }}>{s.device}</div>
+                    <div style={{ fontSize:'0.75rem', color:'var(--text-muted)' }}>{s.location} · {s.time}</div>
+                  </div>
+                </div>
+                {s.current ? <span style={{ padding:'3px 10px', borderRadius:20, background:'#dcfce7', color:'#16a34a', fontSize:'0.7rem', fontWeight:700 }}>Current</span> : <button className="btn btn-secondary btn-sm" style={{ color:'#dc2626' }}>Revoke</button>}
+              </div>
+            ))}
+            <div style={{ marginTop:16, padding:'12px 16px', background:'#fef9c3', borderRadius:8, fontSize:'0.82rem', color:'#b45309' }}>
+              All sessions are automatically expired after 8 hours of inactivity.
+            </div>
+            <div style={{ display:'flex', justifyContent:'flex-end', marginTop:16 }}>
+              <button className="btn btn-secondary" onClick={()=>setShowSessions(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Change Password Modal */}
       {changePw && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>

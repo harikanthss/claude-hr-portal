@@ -40,7 +40,7 @@ export default function LeaderboardPage() {
         <button className="btn btn-secondary btn-sm" onClick={() => downloadCSV('leaderboard', ranked.map(e => ({ Rank:e.rank, Name:e.name, Department:e.department, Points:e.points, Streak:e.streak, Performance:e.performance, Badges:e.badges?.join(', ') })))}>⬇ Export CSV</button>
       </div>
       {/* Podium */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1.1fr 1fr', gap:16, marginBottom:28 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1.1fr 1fr', gap:16, marginBottom:28, alignItems:'flex-end' }}>
         {top3.map((emp, idx) => {
           if (!emp) return <div key={idx}/>;
           const conf = podiumOrder[idx];

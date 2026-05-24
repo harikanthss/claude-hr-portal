@@ -55,7 +55,25 @@ export default function ReportsPage() {
 
       <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:16, gap:10 }}>
         <div style={{ display:'flex', gap:8 }}>
-        <button className="btn btn-secondary" onClick={() => { if(data) exportToCSV('hr-report', [{ headcount:data.headcount, avgSalary:data.avgSalary, totalLeaves:data.totalLeavesTaken, approvedExpenses:data.approvedExpenses, totalExpenses:data.totalExpenses }]); }}><Download size={15}/> Export CSV</button>
+        <button className="btn btn-secondary" onClick={() => {
+          if (!data) return;
+          const rows = [
+            { Report:'Headcount', Value:data.headcount },
+            { Report:'Average Salary (₹)', Value:data.avgSalary },
+            { Report:'Turnover Rate (%)', Value:data.turnoverRate },
+            { Report:'Leaves Approved', Value:data.totalLeavesTaken },
+            { Report:'Expenses Approved', Value:data.approvedExpenses },
+            { Report:'Total Expense Value (₹)', Value:data.totalExpenses },
+            { Report:'---Salary by Dept---', Value:'' },
+            ...(data.salaryByDept||[]).map((d:any) => ({ Report:d.name, Value:d.avg })),
+            { Report:'---Leave Types---', Value:'' },
+            { Report:'Sick Leaves', Value:data.leavesByType?.sick },
+            { Report:'Casual Leaves', Value:data.leavesByType?.casual },
+            { Report:'Annual Leaves', Value:data.leavesByType?.annual },
+            { Report:'Emergency Leaves', Value:data.leavesByType?.emergency },
+          ];
+          exportToCSV('hr-report-full', rows);
+        }}><Download size={15}/> Export CSV</button>
         <button className="btn btn-secondary" onClick={() => window.print()}><FileText size={15}/> Print</button>
       </div>
       </div>

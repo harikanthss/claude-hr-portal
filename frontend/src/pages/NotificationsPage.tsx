@@ -22,8 +22,24 @@ const BADGES_MAP: Record<string, any> = {
 // ===================== NOTIFICATIONS =====================
 export default function NotificationsPage() {
   const { notifications, markNotificationRead, markAllRead } = useStore();
+  const [localNotifs, setLocalNotifs] = React.useState(notifications);
+  React.useEffect(() => { setLocalNotifs(notifications); }, [notifications]);
+
+  const deleteNotif = async (id: string) => {
+    try {
+      await api.del(`/notifications/${id}`);
+      setLocalNotifs(prev => prev.filter((n: any) => n.id !== id));
+    } catch {}
+  };
+
+  const clearRead = async () => {
+    try {
+      await api.del('/notifications');
+      setLocalNotifs(prev => prev.filter((n: any) => !n.read && !n.isRead));
+    } catch {}
+  };
   useRealTimeNotifications(); // polls every 30s
-  const unread = notifications.filter((n: any) => !n.read && !n.isRead).length;
+  const unread = localNotifs.filter((n: any) => !n.read && !n.isRead).length;
 
   const typeIcon: Record<string, React.ReactNode> = {
     info: <Bell size={16} color="#3b82f6" />,
@@ -42,7 +58,7 @@ export default function NotificationsPage() {
         {unread > 0 && <button className="btn btn-secondary btn-sm" onClick={markAllRead}><Check size={14}/> Mark all read</button>}
       </div>
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-        {notifications.map((n: any) => (
+        {localNotifs.map((n: any) => (
           <div key={n.id} className="card" style={{ padding:'16px 20px', display:'flex', alignItems:'flex-start', gap:14, cursor:'pointer', opacity:n.read||n.isRead?0.65:1, borderLeft:`3px solid ${n.type==='error'?'#ef4444':n.type==='warning'?'#f59e0b':n.type==='success'?'#22c55e':'#3b82f6'}`, transition:'opacity 200ms' }} onClick={()=>markNotificationRead(n.id)}>
             <div style={{ width:36, height:36, borderRadius:10, background:typeBg[n.type]||'#f1f5f9', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
               {typeIcon[n.type]}
@@ -54,10 +70,17 @@ export default function NotificationsPage() {
               </div>
               <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', lineHeight:1.5 }}>{n.message}</p>
             </div>
+            <button
+              onClick={e => { e.stopPropagation(); deleteNotif(n.id); }}
+              title="Delete"
+              style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', opacity:0, padding:'2px 6px', borderRadius:6, fontSize:'0.9rem', flexShrink:0 }}
+              onMouseEnter={e => (e.currentTarget.style.opacity='1')}
+              onMouseLeave={e => (e.currentTarget.style.opacity='0')}
+            >×</button>
             {!n.read && !n.isRead && <div style={{ width:8, height:8, borderRadius:'50%', background:'#3b82f6', flexShrink:0, marginTop:4 }}/>}
           </div>
         ))}
-        {notifications.length === 0 && (
+        {localNotifs.length === 0 && (
           <div className="card p-6" style={{ textAlign:'center', color:'var(--text-muted)' }}>
             <Bell size={32} style={{ marginBottom:8 }}/><br/>No notifications yet.
           </div>

@@ -1,4 +1,5 @@
 import { exportEmployees } from '../utils/exportCSV';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import React, { useState } from 'react';
 import { useStore } from '../services/store';
 import { Employee } from '../types';
@@ -33,6 +34,8 @@ export default function EmployeesPage() {
   const isHR = currentUser?.role === 'hr_manager';
 
   const [search, setSearch] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<string|null>(null);
+  const [confirmName, setConfirmName] = useState('');
 
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
@@ -498,6 +501,14 @@ export default function EmployeesPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Deactivate Employee"
+        message={`Are you sure you want to deactivate ${confirmName}? They will lose portal access immediately.`}
+        confirmLabel="Deactivate"
+        onConfirm={async () => { if (confirmDelete) { await deleteEmployee(confirmDelete); setConfirmDelete(null); toast.success('Employee deactivated', `${confirmName} has been deactivated.`); } }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

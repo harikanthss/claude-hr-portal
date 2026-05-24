@@ -1,138 +1,202 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/store';
-import { Shield, Clock, User, Activity, Filter, RefreshCw } from 'lucide-react';
-
-interface AuditEntry { id: string; userId: string; userName: string; action: string; resource: string; resourceId?: string; details?: string; ipAddress?: string; timestamp: string; }
-
-const ACTION_COLORS: Record<string, { color: string; bg: string }> = {
-  create: { color: '#22c55e', bg: '#dcfce7' },
-  update: { color: '#3b82f6', bg: '#dbeafe' },
-  delete: { color: '#ef4444', bg: '#fee2e2' },
-  approve: { color: '#22c55e', bg: '#dcfce7' },
-  reject: { color: '#ef4444', bg: '#fee2e2' },
-  login: { color: '#8b5cf6', bg: '#f3e8ff' },
-  upload: { color: '#06b6d4', bg: '#cffafe' },
-  check_in: { color: '#22c55e', bg: '#dcfce7' },
-  check_out: { color: '#f59e0b', bg: '#fef9c3' },
-};
-
+import { Search, Filter, Download, RefreshCw, Shield } from 'lucide-react';
+import { downloadCSV } from '../utils/exportCSV';
 
 const ACTION_LABELS: Record<string, string> = {
-  create: 'Created',
-  update: 'Updated',
-  delete: 'Deleted',
-  deactivate: 'Deactivated',
-  login: 'Logged in',
-  logout: 'Logged out',
-  approved: 'Approved leave',
-  rejected: 'Rejected leave',
-  change_password: 'Changed password',
-  forgot_password: 'Requested password reset',
-  reset_password: 'Reset password',
-  generate_payslips: 'Generated payslips',
-  upload: 'Uploaded document',
-  'check-in': 'Checked in',
-  'check-out': 'Checked out',
+  create: 'Created', update: 'Updated', delete: 'Deleted', deactivate: 'Deactivated',
+  login: 'Logged in', logout: 'Logged out', approved: 'Approved leave',
+  rejected: 'Rejected leave', change_password: 'Changed password',
+  forgot_password: 'Password reset requested', reset_password: 'Password reset',
+  generate_payslips: 'Generated payslips', upload: 'Uploaded document',
+  bulk_import: 'Bulk employee import', 'check-in': 'Checked in', 'check-out': 'Checked out',
 };
-const humanAction = (action: string, resource: string) => {
-  const label = ACTION_LABELS[action];
-  if (label) return label;
-  return action.charAt(0).toUpperCase() + action.slice(1).replace(/_/g, ' ');
+const humanAction = (action: string) =>
+  ACTION_LABELS[action] || action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+const RESOURCE_LABELS: Record<string, string> = {
+  employee: 'Employee', leave_request: 'Leave', auth: 'Authentication',
+  payroll: 'Payroll', expense: 'Expense', document: 'Document',
+  employees: 'Employees', performance_review: 'Performance',
+};
+const humanResource = (r: string) => RESOURCE_LABELS[r] || r?.replace(/_/g, ' ') || '';
+
+const ACTION_TYPES = ['All Actions', 'login', 'logout', 'create', 'update', 'delete',
+  'approved', 'rejected', 'generate_payslips', 'bulk_import', 'upload'];
+
+const SEVERITY: Record<string, { bg: string; color: string }> = {
+  login:    { bg: '#dbeafe', color: '#1d4ed8' },
+  logout:   { bg: '#f1f5f9', color: '#64748b' },
+  create:   { bg: '#dcfce7', color: '#16a34a' },
+  update:   { bg: '#fef9c3', color: '#b45309' },
+  delete:   { bg: '#fee2e2', color: '#dc2626' },
+  deactivate: { bg: '#fee2e2', color: '#dc2626' },
+  approved: { bg: '#dcfce7', color: '#16a34a' },
+  rejected: { bg: '#fee2e2', color: '#dc2626' },
+  generate_payslips: { bg: '#f3e8ff', color: '#7c3aed' },
+  bulk_import: { bg: '#dbeafe', color: '#1d4ed8' },
 };
 
 export default function AuditLogPage() {
-  const [entries, setEntries] = useState<AuditEntry[]>([]);
-  const [filter, setFilter] = useState({ resource: '', action: '' });
+  const [logs, setLogs] = useState<any[]>([]);
+  const [filtered, setFiltered] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [actionFilter, setActionFilter] = useState('All Actions');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [limit, setLimit] = useState(100);
 
-  const fetchLogs = () => {
+  const fetchLogs = (l = limit) => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (filter.resource) params.set('resource', filter.resource);
-    params.set('limit', '100');
-    api.get(`/audit-log?${params}`).then(data => { if (Array.isArray(data)) setEntries(data); }).catch(() => {}).finally(() => setLoading(false));
+    api.get(`/audit-log?limit=${l}`)
+      .then(d => { if (Array.isArray(d)) { setLogs(d); } })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchLogs(); }, [filter.resource]);
+  useEffect(() => { fetchLogs(); }, []);
 
-  const resources = [...new Set(entries.map(e => e.resource))];
-  const actions = [...new Set(entries.map(e => e.action))];
-  const displayed = entries.filter(e => !filter.action || e.action === filter.action);
+  useEffect(() => {
+    let result = [...logs];
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(l =>
+        l.userName?.toLowerCase().includes(q) ||
+        l.action?.toLowerCase().includes(q) ||
+        l.resource?.toLowerCase().includes(q) ||
+        l.details?.toLowerCase().includes(q)
+      );
+    }
+    if (actionFilter !== 'All Actions') result = result.filter(l => l.action === actionFilter);
+    if (dateFrom) result = result.filter(l => l.timestamp >= dateFrom);
+    if (dateTo) result = result.filter(l => l.timestamp <= dateTo + 'T23:59:59');
+    setFiltered(result);
+  }, [logs, search, actionFilter, dateFrom, dateTo]);
 
-  const formatTime = (ts: string) => {
-    const d = new Date(ts);
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  };
+  const sev = (action: string) => SEVERITY[action] || { bg: '#f1f5f9', color: '#64748b' };
 
   return (
     <div className="animate-fade">
-      <div className="grid-3 mb-6">
-        <div className="card" style={{ padding: '20px 24px', borderLeft: '3px solid #8b5cf6' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>Total Actions</div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#8b5cf6' }}>{entries.length}</div>
-        </div>
-        <div className="card" style={{ padding: '20px 24px', borderLeft: '3px solid #22c55e' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>Active Users</div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#22c55e' }}>{new Set(entries.map(e => e.userId)).size}</div>
-        </div>
-        <div className="card" style={{ padding: '20px 24px', borderLeft: '3px solid #3b82f6' }}>
-          <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>Resources</div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#3b82f6' }}>{resources.length}</div>
-        </div>
+      {/* Stats */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:20 }}>
+        {[
+          { label:'Total Entries', val:logs.length, color:'#3b82f6', bg:'#dbeafe' },
+          { label:'Filtered Results', val:filtered.length, color:'#7c3aed', bg:'#f3e8ff' },
+          { label:'Today', val:logs.filter(l=>l.timestamp?.startsWith(new Date().toISOString().split('T')[0])).length, color:'#22c55e', bg:'#dcfce7' },
+          { label:'Security Events', val:logs.filter(l=>['login','logout','change_password','reset_password'].includes(l.action)).length, color:'#f59e0b', bg:'#fef9c3' },
+        ].map(s => (
+          <div key={s.label} className="card" style={{ padding:'16px 18px', borderLeft:`3px solid ${s.color}` }}>
+            <div style={{ fontSize:'1.5rem', fontWeight:800, color:s.color }}>{s.val}</div>
+            <div style={{ fontSize:'0.75rem', color:'var(--text-muted)', marginTop:2 }}>{s.label}</div>
+          </div>
+        ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
-        <Filter size={16} color="var(--text-muted)" />
-        <select className="form-input" style={{ width: 180 }} value={filter.resource} onChange={e => setFilter(f => ({ ...f, resource: e.target.value }))}>
-          <option value="">All Resources</option>
-          {resources.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
-        <select className="form-input" style={{ width: 160 }} value={filter.action} onChange={e => setFilter(f => ({ ...f, action: e.target.value }))}>
-          <option value="">All Actions</option>
-          {actions.map(a => <option key={a} value={a}>{a}</option>)}
-        </select>
-        <button className="btn btn-secondary btn-sm" onClick={fetchLogs}><RefreshCw size={14} /> Refresh</button>
+      {/* Filters */}
+      <div className="card p-4 mb-4">
+        <div style={{ display:'grid', gridTemplateColumns:'1fr auto auto auto auto auto', gap:10, alignItems:'center' }}>
+          <div style={{ position:'relative' }}>
+            <Search size={15} style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }}/>
+            <input
+              className="input" placeholder="Search user, action, resource..."
+              value={search} onChange={e => setSearch(e.target.value)}
+              style={{ paddingLeft:34 }}
+            />
+          </div>
+          <select className="input" value={actionFilter} onChange={e => setActionFilter(e.target.value)} style={{ width:160 }}>
+            {ACTION_TYPES.map(a => <option key={a}>{a}</option>)}
+          </select>
+          <input type="date" className="input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ width:140 }} title="From date"/>
+          <input type="date" className="input" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ width:140 }} title="To date"/>
+          <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(''); setActionFilter('All Actions'); setDateFrom(''); setDateTo(''); }}>
+            <Filter size={13}/> Clear
+          </button>
+          <div style={{ display:'flex', gap:6 }}>
+            <button className="btn btn-secondary btn-sm" onClick={() => fetchLogs()} disabled={loading}>
+              <RefreshCw size={13} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }}/>
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => downloadCSV('audit-log', filtered.map(l => ({
+              Timestamp: l.timestamp, User: l.userName, Action: humanAction(l.action),
+              Resource: humanResource(l.resource), Details: l.details || '', IP: l.ipAddress || ''
+            })))}>
+              <Download size={13}/>
+            </button>
+          </div>
+        </div>
+        {(search || actionFilter !== 'All Actions' || dateFrom || dateTo) && (
+          <div style={{ marginTop:8, fontSize:'0.75rem', color:'var(--text-muted)' }}>
+            Showing {filtered.length} of {logs.length} entries
+          </div>
+        )}
       </div>
 
-      <div className="card" style={{ padding: 0 }}>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {displayed.map((entry, i) => {
-            const cfg = ACTION_COLORS[entry.action] || { color: '#64748b', bg: '#f1f5f9' };
-            return (
-              <div key={entry.id} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 16, padding: '14px 20px',
-                borderBottom: i < displayed.length - 1 ? '1px solid var(--border-light)' : 'none',
-              }}>
-                <div style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: cfg.bg, color: cfg.color, flexShrink: 0 }}>
-                  <Activity size={16} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{entry.userName}</span>
-                    <span className="badge" style={{ background: cfg.bg, color: cfg.color, fontSize: '0.65rem' }}>{entry.action}</span>
-                    <span className="badge badge-blue" style={{ fontSize: '0.65rem' }}>{entry.resource}</span>
-                  </div>
-                  {entry.details && <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{entry.details}</div>}
-                </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                  <Clock size={11} style={{ marginRight: 4, verticalAlign: 'middle' }} />{formatTime(entry.timestamp)}
-                </div>
-              </div>
-            );
-          })}
-          {displayed.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-              <Shield size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
-              <div>No audit entries found</div>
-            </div>
-          )}
-        </div>
+      {/* Load more */}
+      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:8 }}>
+        <select className="input" value={limit} onChange={e => { setLimit(Number(e.target.value)); fetchLogs(Number(e.target.value)); }} style={{ width:130, fontSize:'0.8rem' }}>
+          {[50,100,250,500].map(n => <option key={n} value={n}>Show {n}</option>)}
+        </select>
       </div>
+
+      {/* Table */}
+      <div className="card" style={{ overflowX:'auto' }}>
+        <table className="table">
+          <thead>
+            <tr>
+              <th style={{ width:150 }}>Timestamp</th>
+              <th>User</th>
+              <th>Action</th>
+              <th>Resource</th>
+              <th>Details</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              Array.from({length:8}).map((_,i) => (
+                <tr key={i}>
+                  {Array.from({length:6}).map((__,j) => (
+                    <td key={j}><div className="skeleton" style={{ height:14, borderRadius:4 }}/></td>
+                  ))}
+                </tr>
+              ))
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={6} style={{ textAlign:'center', padding:40, color:'var(--text-muted)' }}>
+                <Shield size={28} style={{ marginBottom:8, display:'block', margin:'0 auto 8px' }}/>
+                No audit entries match your filters.
+              </td></tr>
+            ) : filtered.map(log => {
+              const s = sev(log.action);
+              return (
+                <tr key={log.id}>
+                  <td style={{ fontFamily:'var(--font-mono)', fontSize:'0.72rem', color:'var(--text-muted)', whiteSpace:'nowrap' }}>
+                    {log.timestamp ? new Date(log.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—'}
+                  </td>
+                  <td>
+                    <div style={{ fontWeight:600, fontSize:'0.85rem' }}>{log.userName || 'System'}</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{log.userId || ''}</div>
+                  </td>
+                  <td>
+                    <span style={{ display:'inline-block', padding:'3px 9px', borderRadius:20, background:s.bg, color:s.color, fontSize:'0.7rem', fontWeight:700, whiteSpace:'nowrap' }}>
+                      {humanAction(log.action)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="chip" style={{ fontSize:'0.72rem' }}>{humanResource(log.resource)}</span>
+                  </td>
+                  <td style={{ fontSize:'0.8rem', color:'var(--text-secondary)', maxWidth:220, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={log.details}>
+                    {log.details || '—'}
+                  </td>
+                  <td style={{ fontFamily:'var(--font-mono)', fontSize:'0.72rem', color:'var(--text-muted)' }}>
+                    {log.ipAddress || '—'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }

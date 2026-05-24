@@ -39,7 +39,7 @@ export default function OnboardingPage() {
     if (!item) return;
     const newDone = !item.done;
     try {
-      await api.put(`/onboarding/task/${itemId}`, { done: newDone });
+      await api.put(`/onboarding/${itemId}`, { done: newDone });
       setEmployees(prev => prev.map(e => {
         if (e.id !== empId) return e;
         const checklist = e.checklist.map(c => c.id === itemId ? { ...c, done: newDone } : c);

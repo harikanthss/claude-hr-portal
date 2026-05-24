@@ -712,3 +712,25 @@ tbody tr:hover { background: var(--primary-subtle); }
 
 /* Section divider */
 .section-divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+/* ─── form-input alias (same as .input) ─────────────────────────────────────── */
+.form-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: var(--font-sans);
+  transition: border-color 150ms, box-shadow 150ms;
+  outline: none;
+}
+.form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+}
+.form-input::placeholder { color: var(--text-muted); }
+select.form-input { cursor: pointer; }
+textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.6; }
+.dark .form-input { background: var(--bg); color: var(--text); }

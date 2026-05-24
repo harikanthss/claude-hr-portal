@@ -95,6 +95,11 @@ const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS revoked_tokens (
     id TEXT PRIMARY KEY, token TEXT NOT NULL, revokedAt TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS department_budgets (
+    id TEXT PRIMARY KEY, department TEXT NOT NULL, month TEXT NOT NULL,
+    year INTEGER NOT NULL, budgetAmount REAL DEFAULT 0, spentAmount REAL DEFAULT 0,
+    createdBy TEXT, updatedAt TEXT, UNIQUE(department, month, year)
+  );
 `;
 
 let db;
@@ -328,6 +333,23 @@ async function seedIfEmpty(dbConn, isPg) {
   ];
   for (const [sql, params] of docSeeds) {
     try { await run(dbConn, isPg, sql, params); } catch {}
+  }
+
+  // Seed department budgets
+  const budgetData = [
+    ['Engineering','March',2024,500000],['Design','March',2024,200000],
+    ['Sales','March',2024,300000],['HR','March',2024,150000],
+    ['Finance','March',2024,180000],['Marketing','March',2024,220000],
+    ['Engineering','April',2024,520000],['Design','April',2024,210000],
+    ['Sales','April',2024,320000],
+  ];
+  for (const [dept, month, year, amount] of budgetData) {
+    try {
+      await run(dbConn, isPg,
+        'INSERT OR IGNORE INTO department_budgets (id,department,month,year,budgetAmount,spentAmount,createdBy,updatedAt) VALUES (?,?,?,?,?,0,?,?)',
+        [id('bud'), dept, month, year, amount, 'Divya Kumar', new Date().toISOString()]
+      );
+    } catch {}
   }
   console.log('✅ Database seeded successfully');
 }

@@ -55,7 +55,7 @@ export default function OrgChartPage() {
     const color = DEPT_COLORS[node.department] || '#64748b';
 
     return (
-      <div style={{ marginLeft: depth > 0 ? 40 : 0 }}>
+      <div style={{ marginLeft: depth > 0 ? Math.min(40, 20) : 0 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 0, position: 'relative' }}>
           {depth > 0 && (
             <div style={{ width: 32, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8, paddingTop: 20, flexShrink: 0 }}>
@@ -138,7 +138,10 @@ export default function OrgChartPage() {
       </div>
 
       {/* Org Tree */}
-      <div className="card p-6">
+      <div style={{ marginBottom:16, fontSize:'0.8rem', color:'var(--text-muted)', display:'flex', alignItems:'center', gap:6 }}>
+        ℹ️ Tap a card to expand/collapse direct reports
+      </div>
+      <div className="card p-6" style={{ overflowX:'auto' }}>
         <h3 style={{ marginBottom: 20 }}>Company Hierarchy</h3>
         {roots.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
