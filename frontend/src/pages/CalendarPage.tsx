@@ -80,6 +80,15 @@ export default function CalendarPage() {
     } catch { toast.error('Failed', 'Could not create event.'); }
   };
 
+
+  const handleDeleteEvent = async (id: string) => {
+    try {
+      await api.del(`/calendar/events/${id}`);
+      setEvents(prev => prev.filter(e => e.id !== id));
+      toast.success('Event deleted', 'Calendar event removed.');
+    } catch { toast.error('Failed', 'Could not delete event.'); }
+  };
+
   return (
     <div className="animate-fade">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
@@ -141,7 +150,21 @@ export default function CalendarPage() {
                 <div key={b.name} style={{ padding: '8px 12px', borderRadius: 8, background: '#fce7f3', marginBottom: 8, fontSize: '0.8rem', color: '#be185d' }}>🎂 {b.name}'s Birthday</div>
               ))}
               {selectedEvents.events.map(e => (
-                <div key={e.id} style={{ padding: '8px 12px', borderRadius: 8, background: `${e.color}15`, borderLeft: `3px solid ${e.color}`, marginBottom: 8, fontSize: '0.8rem' }}>{e.title}</div>
+                <div key={e.id} style={{ padding: '8px 12px', borderRadius: 8, background: `${e.color}15`, borderLeft: `3px solid ${e.color}`, marginBottom: 8, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{e.title}</div>
+                    {e.description && <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{e.description}</div>}
+                  </div>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDeleteEvent(e.id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1rem', padding: '0 4px', opacity: 0.6, flexShrink: 0 }}
+                      onMouseEnter={ev => (ev.currentTarget.style.opacity = '1')}
+                      onMouseLeave={ev => (ev.currentTarget.style.opacity = '0.6')}
+                      title="Delete event"
+                    >×</button>
+                  )}
+                </div>
               ))}
               {selectedEvents.leaves.map(l => (
                 <div key={l.id} style={{ padding: '8px 12px', borderRadius: 8, background: '#fef3c7', marginBottom: 8, fontSize: '0.8rem' }}>

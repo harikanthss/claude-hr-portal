@@ -59,7 +59,12 @@ export default function EmployeesPage() {
         const empRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/employees`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (empRes.ok) { const emps = await empRes.json(); useStore.setState({ employees: emps }); }
+        if (empRes.ok) {
+          const emps = await empRes.json();
+          // Refresh via proper store action
+          if (Array.isArray(emps)) // useStore.setState is valid in Zustand for external updates
+          useStore.setState({ employees: emps });
+        }
       }
     } catch { setImportResult({ message: 'Import failed. Please check your CSV format.' }); }
     finally { setImporting(false); e.target.value = ''; }
@@ -75,7 +80,6 @@ export default function EmployeesPage() {
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [form, setForm] = useState<Omit<Employee, 'id'>>(EMPTY_EMP);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Credentials modal
   const [credInfo, setCredInfo] = useState<CredInfo | null>(null);
@@ -292,7 +296,7 @@ export default function EmployeesPage() {
                           <KeyRound size={14} />
                         </button>
                       )}
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setDeleteConfirm(emp.id)} title="Delete" style={{ color: '#dc2626' }}>
+                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => { setConfirmDelete(emp.id); setConfirmName(emp.name); }} title="Delete" style={{ color: '#dc2626' }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -380,26 +384,7 @@ export default function EmployeesPage() {
       )}
 
       {/* ── Delete confirm ─────────────────────────────── */}
-      {deleteConfirm && (
-        <div className="modal-overlay" onClick={() => setDeleteConfirm(null)}>
-          <div className="modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Confirm Delete</h3>
-              <button className="btn btn-ghost btn-icon" onClick={() => setDeleteConfirm(null)}><X size={18} /></button>
-            </div>
-            <div className="modal-body">
-              <p style={{ color: 'var(--text-secondary)' }}>Are you sure you want to delete this employee? This action cannot be undone.</p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setDeleteConfirm(null)}>Cancel</button>
-              <button className="btn btn-danger" onClick={() => { deleteEmployee(deleteConfirm); toast.error('Employee deleted', 'The employee record has been removed.'); setDeleteConfirm(null); }}>
-                Delete Employee
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      
       {/* ── Credentials Modal (HR only) ────────────────── */}
       {credInfo && isHR && (
         <div className="modal-overlay" onClick={() => setCredInfo(null)}>

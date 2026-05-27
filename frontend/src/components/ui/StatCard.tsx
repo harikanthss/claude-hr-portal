@@ -59,7 +59,7 @@ export default function StatCard({ label, value, change, changeLabel, icon, icon
         {isNumeric ? animated : value}
         {suffix && <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{suffix}</span>}
       </div>
-      {change !== undefined && (
+      {change !== undefined && change !== null && (
         <div className="stat-change" style={{ color: isPositive ? '#16a34a' : isNegative ? '#dc2626' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
           {isPositive ? <TrendingUp size={12} /> : isNegative ? <TrendingDown size={12} /> : <Minus size={12} />}
           {Math.abs(change)}% {changeLabel || 'vs last month'}

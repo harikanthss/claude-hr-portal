@@ -24,6 +24,13 @@ const PAGE_TITLES: Record<string, string> = {
   orgchart: 'Org Chart',
 };
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrator',
+  hr_manager: 'HR Manager',
+  manager: 'Manager',
+  employee: 'Employee',
+};
+
 export default function Topbar({ currentPage, onNavigate }: TopbarProps) {
   const { currentUser, darkMode, toggleDarkMode, toggleSidebar, notifications } = useStore();
   const [showUserMenu, setShowUserMenu] = useState(false);

@@ -108,7 +108,7 @@ export default function AttendancePage() {
   return (
     <div className="animate-fade">
       <div className="grid-4 mb-6">
-        <StatCard label="Present Today" value={presentToday} suffix={`/${employees.filter(e=>e.status==='active').length}`} change={null as any} icon={<CheckCircle2 size={20}/>} iconBg="#dcfce7" iconColor="#16a34a"/>
+        <StatCard label="Present Today" value={presentToday} suffix={`/${employees.filter(e=>e.status==='active').length}`} change={undefined} icon={<CheckCircle2 size={20}/>} iconBg="#dcfce7" iconColor="#16a34a"/>
         <StatCard label="Absent Today" value={absentToday} icon={<XCircle size={20}/>} iconBg="#fee2e2" iconColor="#dc2626"/>
         <StatCard label="Late Today" value={lateToday} icon={<AlertCircle size={20}/>} iconBg="#fef9c3" iconColor="#b45309"/>
         <StatCard label="Monthly Rate" value={monthlyRate} suffix="%" change={3} icon={<TrendingUp size={20}/>} iconBg="#dbeafe" iconColor="#1d4ed8"/>

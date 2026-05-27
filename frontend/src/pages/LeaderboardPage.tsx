@@ -1,14 +1,8 @@
-import { PageLoader } from '../components/ui/SkeletonLoader';
 import React, { useState, useEffect } from 'react';
-import { downloadCSV } from '../utils/exportCSV';
+import { PageLoader } from '../components/ui/SkeletonLoader';
 import { useStore, api } from '../services/store';
-import AIInsightCard from '../components/ai/AIInsightCard';
-import StatCard from '../components/ui/StatCard';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
-} from 'recharts';
-import { Bell, Download, FileText, Zap, Trophy, User, Mail, Phone, MapPin, Edit2, Check, X, Shield, RefreshCw, Lock } from 'lucide-react';
+import { downloadCSV } from '../utils/exportCSV';
+import { Trophy } from 'lucide-react';
 
 const BADGES_MAP: Record<string, any> = {
   perfect_attendance: { name: 'Perfect Attendance', icon: '🏆', color: '#22c55e' },

@@ -1,13 +1,9 @@
-import { PageLoader } from '../components/ui/SkeletonLoader';
 import React, { useState, useEffect } from 'react';
+import { PageLoader } from '../components/ui/SkeletonLoader';
 import { useStore, api } from '../services/store';
-import AIInsightCard from '../components/ai/AIInsightCard';
 import StatCard from '../components/ui/StatCard';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
-} from 'recharts';
-import { Bell, Download, FileText, Zap, Trophy, User, Mail, Phone, MapPin, Edit2, Check, X, Shield, RefreshCw, Lock } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { Download, FileText, RefreshCw, Users, DollarSign, TrendingDown, Calendar } from 'lucide-react';
 import { downloadCSV as exportToCSV } from '../utils/exportCSV';
 
 const BADGES_MAP: Record<string, any> = {

@@ -1,3 +1,4 @@
+import { PageLoader } from '../components/ui/SkeletonLoader';
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/store';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -15,10 +16,15 @@ export default function BudgetPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ department:'Engineering', month:'March', year:'2024', budgetAmount:'' });
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [year, setYear] = useState('2024');
 
   const fetchSummary = () => {
-    api.get(`/budgets/summary?year=${year}`).then(d => { if (Array.isArray(d)) setSummary(d); }).catch(() => {});
+    setLoading(true);
+    api.get(`/budgets/summary?year=${parseInt(year)}`)
+      .then(d => { if (Array.isArray(d)) setSummary(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => { fetchSummary(); }, [year]);
@@ -27,7 +33,7 @@ export default function BudgetPage() {
     if (!form.budgetAmount) return;
     setSaving(true);
     try {
-      await api.post('/budgets', form);
+      await api.post('/budgets', { ...form, year: parseInt(form.year) });
       setShowForm(false);
       setForm({ department:'Engineering', month:'March', year:'2024', budgetAmount:'' });
       fetchSummary();
@@ -46,6 +52,7 @@ export default function BudgetPage() {
 
   return (
     <div className="animate-fade">
+      {loading && summary.length === 0 ? <PageLoader /> : null}
       <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginBottom:20 }}>
         <select className="input" value={year} onChange={e => setYear(e.target.value)} style={{ width:100 }}>
           {['2023','2024','2025'].map(y => <option key={y}>{y}</option>)}

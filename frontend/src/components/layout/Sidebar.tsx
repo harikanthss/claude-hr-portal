@@ -69,11 +69,13 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
 
   const filtered = NAV_ITEMS.filter(item => item.roles.includes(currentUser.role));
 
-  const roleLabel = {
+  const ROLE_MAP: Record<string, string> = {
+    admin: 'Administrator',
     hr_manager: 'HR Manager',
     manager: 'Manager',
     employee: 'Employee',
-  }[currentUser.role];
+  };
+  const roleLabel = ROLE_MAP[currentUser.role] || currentUser.role;
 
   return (
     <aside

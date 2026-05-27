@@ -10,7 +10,7 @@ cd frontend && npm install && npm run build && cd ..
 
 # Copy frontend build to backend public
 mkdir -p backend/public
-cp -r frontend/dist/* backend/public/
+mkdir -p backend/public && cp -r frontend/dist/* backend/public/
 
 echo "✅ Build complete. Starting server..."
 cd backend && node server.js

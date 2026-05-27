@@ -1,90 +1,103 @@
-import { useRealTimeNotifications } from '../hooks/useRealTimeNotifications';
 import React, { useState, useEffect } from 'react';
+import { useRealTimeNotifications } from '../hooks/useRealTimeNotifications';
 import { useStore, api } from '../services/store';
-import AIInsightCard from '../components/ai/AIInsightCard';
-import StatCard from '../components/ui/StatCard';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
-} from 'recharts';
-import { Bell, Download, FileText, Zap, Trophy, User, Mail, Phone, MapPin, Edit2, Check, X, Shield, RefreshCw, Lock } from 'lucide-react';
+import { Bell, Check, X, Trash2 } from 'lucide-react';
+import { toast } from '../components/ui/Toast';
 
-const BADGES_MAP: Record<string, any> = {
-  perfect_attendance: { name: 'Perfect Attendance', icon: '🏆', color: '#22c55e' },
-  top_performer: { name: 'Top Performer', icon: '⭐', color: '#f59e0b' },
-  team_player: { name: 'Team Player', icon: '🤝', color: '#3b82f6' },
-  streak_master: { name: 'Streak Master', icon: '🔥', color: '#ef4444' },
-  early_bird: { name: 'Early Bird', icon: '🌅', color: '#8b5cf6' },
-  mentor: { name: 'Mentor', icon: '🎓', color: '#06b6d4' },
-};
-
-
-// ===================== NOTIFICATIONS =====================
 export default function NotificationsPage() {
   const { notifications, markNotificationRead, markAllRead } = useStore();
-  const [localNotifs, setLocalNotifs] = React.useState(notifications);
-  React.useEffect(() => { setLocalNotifs(notifications); }, [notifications]);
+  useRealTimeNotifications();
+
+  // localNotifs syncs with store on every poll
+  const [localNotifs, setLocalNotifs] = useState<any[]>(notifications);
+  useEffect(() => { setLocalNotifs(notifications); }, [notifications]);
+
+  const unread = localNotifs.filter((n: any) => !n.read && !n.isRead).length;
 
   const deleteNotif = async (id: string) => {
     try {
       await api.del(`/notifications/${id}`);
       setLocalNotifs(prev => prev.filter((n: any) => n.id !== id));
-    } catch {}
+    } catch { toast.error('Failed', 'Could not delete notification.'); }
   };
 
   const clearRead = async () => {
     try {
       await api.del('/notifications');
       setLocalNotifs(prev => prev.filter((n: any) => !n.read && !n.isRead));
+      toast.success('Cleared', 'Read notifications removed.');
     } catch {}
   };
-  useRealTimeNotifications(); // polls every 30s
-  const unread = localNotifs.filter((n: any) => !n.read && !n.isRead).length;
 
-  const typeIcon: Record<string, React.ReactNode> = {
-    info: <Bell size={16} color="#3b82f6" />,
-    success: <Check size={16} color="#22c55e" />,
-    warning: <Bell size={16} color="#f59e0b" />,
-    error: <Bell size={16} color="#ef4444" />,
+  const typeIcon: Record<string, string> = {
+    info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌',
   };
-  const typeBg: Record<string, string> = {
-    info:'#dbeafe', success:'#dcfce7', warning:'#fef9c3', error:'#fee2e2'
+  const typeBorder: Record<string, string> = {
+    info: '#3b82f6', success: '#22c55e', warning: '#f59e0b', error: '#ef4444',
   };
 
   return (
     <div className="animate-fade">
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-        <span className="badge badge-red">{unread} unread</span>
-        {unread > 0 && <button className="btn btn-secondary btn-sm" onClick={markAllRead}><Check size={14}/> Mark all read</button>}
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <Bell size={20} color="var(--text-muted)"/>
+          <span style={{ fontWeight:700, fontSize:'1rem' }}>Notifications</span>
+          {unread > 0 && <span className="badge badge-red">{unread} unread</span>}
+        </div>
+        <div style={{ display:'flex', gap:8 }}>
+          {unread > 0 && (
+            <button className="btn btn-secondary btn-sm" onClick={() => { markAllRead(); setLocalNotifs(prev => prev.map((n:any) => ({...n, read:true, isRead:true}))); }}>
+              <Check size={13}/> Mark all read
+            </button>
+          )}
+          <button className="btn btn-secondary btn-sm" onClick={clearRead} title="Remove all read notifications">
+            <Trash2 size={13}/> Clear read
+          </button>
+        </div>
       </div>
+
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-        {localNotifs.map((n: any) => (
-          <div key={n.id} className="card" style={{ padding:'16px 20px', display:'flex', alignItems:'flex-start', gap:14, cursor:'pointer', opacity:n.read||n.isRead?0.65:1, borderLeft:`3px solid ${n.type==='error'?'#ef4444':n.type==='warning'?'#f59e0b':n.type==='success'?'#22c55e':'#3b82f6'}`, transition:'opacity 200ms' }} onClick={()=>markNotificationRead(n.id)}>
-            <div style={{ width:36, height:36, borderRadius:10, background:typeBg[n.type]||'#f1f5f9', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              {typeIcon[n.type]}
-            </div>
+        {localNotifs.length === 0 ? (
+          <div className="card p-6" style={{ textAlign:'center', color:'var(--text-muted)' }}>
+            <Bell size={32} style={{ marginBottom:10, opacity:0.3 }}/><br/>
+            No notifications yet.
+          </div>
+        ) : localNotifs.map((n: any) => (
+          <div
+            key={n.id}
+            className="card"
+            style={{
+              padding:'14px 18px',
+              display:'flex', alignItems:'flex-start', gap:14,
+              cursor:'pointer',
+              opacity: (n.read || n.isRead) ? 0.6 : 1,
+              borderLeft: `3px solid ${typeBorder[n.type] || '#3b82f6'}`,
+              transition:'opacity 200ms',
+            }}
+            onClick={() => { markNotificationRead(n.id); setLocalNotifs(prev => prev.map((x:any) => x.id===n.id ? {...x,read:true,isRead:true} : x)); }}
+          >
+            <div style={{ fontSize:'1.2rem', flexShrink:0, marginTop:2 }}>{typeIcon[n.type] || 'ℹ️'}</div>
             <div style={{ flex:1 }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
                 <span style={{ fontWeight:600, fontSize:'0.875rem' }}>{n.title}</span>
-                <span style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{new Date(n.time||n.timestamp).toLocaleDateString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+                <span style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>
+                  {n.time ? new Date(n.time).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : ''}
+                </span>
               </div>
-              <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', lineHeight:1.5 }}>{n.message}</p>
+              <p style={{ fontSize:'0.82rem', color:'var(--text-secondary)', lineHeight:1.5, margin:0 }}>{n.message}</p>
             </div>
-            <button
-              onClick={e => { e.stopPropagation(); deleteNotif(n.id); }}
-              title="Delete"
-              style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', opacity:0, padding:'2px 6px', borderRadius:6, fontSize:'0.9rem', flexShrink:0 }}
-              onMouseEnter={e => (e.currentTarget.style.opacity='1')}
-              onMouseLeave={e => (e.currentTarget.style.opacity='0')}
-            >×</button>
-            {!n.read && !n.isRead && <div style={{ width:8, height:8, borderRadius:'50%', background:'#3b82f6', flexShrink:0, marginTop:4 }}/>}
+            <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+              {!n.read && !n.isRead && <div style={{ width:8, height:8, borderRadius:'50%', background:'#3b82f6' }}/>}
+              <button
+                onClick={e => { e.stopPropagation(); deleteNotif(n.id); }}
+                style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', padding:'2px 4px', borderRadius:4, opacity:0, fontSize:'0.85rem' }}
+                onMouseEnter={e => (e.currentTarget.style.opacity='1')}
+                onMouseLeave={e => (e.currentTarget.style.opacity='0')}
+                title="Delete"
+              >×</button>
+            </div>
           </div>
         ))}
-        {localNotifs.length === 0 && (
-          <div className="card p-6" style={{ textAlign:'center', color:'var(--text-muted)' }}>
-            <Bell size={32} style={{ marginBottom:8 }}/><br/>No notifications yet.
-          </div>
-        )}
       </div>
     </div>
   );

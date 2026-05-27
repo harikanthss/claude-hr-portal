@@ -5,7 +5,7 @@ import { Calendar, CheckCircle2, XCircle, Clock, Plus, X, Check, AlertCircle } f
 import StatCard from '../components/ui/StatCard';
 import { exportLeaves } from '../utils/exportCSV';
 
-const LEAVE_TYPES = ['sick','casual','annual','emergency','maternity','paternity'];
+const LEAVE_TYPES = ['sick','casual','annual','emergency','maternity','paternity','compensatory'];
 const STATUS_CONFIG: Record<string,{color:string;bg:string;icon:React.ReactNode}> = {
   pending:  { color:'#b45309', bg:'#fef9c3', icon:<Clock size={12}/> },
   approved: { color:'#16a34a', bg:'#dcfce7', icon:<CheckCircle2 size={12}/> },

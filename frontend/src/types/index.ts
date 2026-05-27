@@ -1,4 +1,4 @@
-export type UserRole = 'hr_manager' | 'manager' | 'employee';
+export type UserRole = 'admin' | 'hr_manager' | 'manager' | 'employee';
 
 export interface User {
   id: string;
@@ -38,7 +38,7 @@ export interface LeaveRequest {
   employeeName: string;
   employeeAvatar: string;
   department: string;
-  type: 'sick' | 'casual' | 'annual' | 'maternity' | 'paternity' | 'emergency';
+  type: 'sick' | 'casual' | 'annual' | 'maternity' | 'paternity' | 'emergency' | 'compensatory';
   startDate: string;
   endDate: string;
   days: number;
