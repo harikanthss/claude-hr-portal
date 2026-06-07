@@ -20,14 +20,18 @@ export default function OnboardingPage() {
   const [employees, setEmployees] = useState<OnboardingEmployee[]>([]);
   const [selected, setSelected] = useState<string>('');
   const [expanded, setExpanded] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    setLoading(true);
     api.get('/onboarding').then(data => {
       if (Array.isArray(data) && data.length > 0) {
         setEmployees(data);
         setSelected(data[0].id);
       }
-    }).catch(() => {});
+    }).catch((err) => setError(err instanceof Error ? err.message : 'Unable to load onboarding.'))
+      .finally(() => setLoading(false));
   }, []);
 
   const selectedEmployee = employees.find(e => e.id === selected);
@@ -55,6 +59,11 @@ export default function OnboardingPage() {
 
   return (
     <div className="animate-fade">
+      {loading && <div className="card p-6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading onboarding...</div>}
+      {!loading && error && <div className="card p-6" style={{ textAlign: 'center', color: '#dc2626' }}>{error}</div>}
+      {!loading && !error && employees.length === 0 && <div className="card p-6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No active onboarding records.</div>}
+      {!loading && !error && employees.length > 0 && (
+      <>
       <div className="grid-3 mb-6">
         <div className="card" style={{ padding: '20px 24px', borderLeft: '3px solid #22c55e' }}>
           <div style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: 8 }}>Active Onboarding</div>
@@ -148,6 +157,8 @@ export default function OnboardingPage() {
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

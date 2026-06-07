@@ -129,14 +129,14 @@ export default function HRDashboard() {
         <div className="card p-6">
           <h3 style={{ marginBottom: 16 }}>Employee Status Overview</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <ResponsiveContainer width={180} height={180}>
-              <PieChart>
+            <div style={{ width: 180, height: 180, flexShrink: 0 }}>
+              <PieChart width={180} height={180}>
                 <Pie data={pieData} cx="50%" cy="50%" outerRadius={78} paddingAngle={3} dataKey="value">
                   {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} />
               </PieChart>
-            </ResponsiveContainer>
+            </div>
             <div style={{ flex: 1 }}>
               {pieData.map(item => (
                 <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>

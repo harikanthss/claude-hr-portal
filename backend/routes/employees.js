@@ -3,15 +3,30 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const db = require('../config/database');
-const { authenticateToken, requireAdminOrHR } = require('../middleware/auth');
+const supabaseDb = require('../config/supabase');
+const supabaseHr = require('../data/supabaseHr');
+const { authenticateToken, requireAdminOrHR, isAdminOrHR, isDirectReport, isSelfEmployee, canAccessEmployee, scopedEmployeeIds } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 const { genId, logAudit, addNotification } = require('../utils/helpers');
-const { sendEmail, templates } = require('../config/email');
+const { sendEmail, sendEmailNotification, templates } = require('../config/email');
+const { notifyProfiles, HR_ROLES, genericTemplate } = require('../services/notifications');
 
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    let sql = 'SELECT * FROM employees WHERE 1=1';
+    if (supabaseDb.enabled && req.user.supabase) {
+      return res.json(await supabaseHr.getEmployees(req.user, req.query));
+    }
+    const fullAccess = isAdminOrHR(req.user);
+    let sql = fullAccess
+      ? 'SELECT * FROM employees WHERE 1=1'
+      : 'SELECT id,name,email,department,position,status,joinDate,attendance,performance,avatar,phone,location,points,streak,managerId,bio FROM employees WHERE 1=1';
     const params = [];
+    const allowedIds = scopedEmployeeIds(req.user);
+    if (allowedIds && allowedIds.length === 0) return res.json([]);
+    if (allowedIds) {
+      sql += ` AND id IN (${allowedIds.map(() => '?').join(',')})`;
+      params.push(...allowedIds);
+    }
     if (req.query.department) { sql += ' AND department=?'; params.push(req.query.department); }
     if (req.query.status) { sql += ' AND status=?'; params.push(req.query.status); }
     if (req.query.search) { sql += ' AND (name LIKE ? OR email LIKE ? OR position LIKE ?)'; const s=`%${req.query.search}%`; params.push(s,s,s); }
@@ -20,10 +35,20 @@ router.get('/', authenticateToken, (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
+    if (supabaseDb.enabled && req.user.supabase) {
+      const emp = await supabaseHr.getEmployee(req.user, req.params.id);
+      if (!emp) return res.status(emp === false ? 403 : 404).json({ error: emp === false ? 'Access denied' : 'Employee not found' });
+      return res.json(emp);
+    }
     const emp = db.prepare('SELECT * FROM employees WHERE id=?').get(req.params.id);
     if (!emp) return res.status(404).json({ error: 'Employee not found' });
+    if (!canAccessEmployee(req.user, emp)) return res.status(403).json({ error: 'Access denied' });
+    if (!isAdminOrHR(req.user) && !isDirectReport(req.user, emp)) {
+      const { salary, ...safeEmp } = emp;
+      return res.json(safeEmp);
+    }
     res.json(emp);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -32,6 +57,23 @@ router.post('/', authenticateToken, requireAdminOrHR, async (req, res) => {
   const { name, email, department, position, salary, joinDate, status, phone, location, managerId } = req.body;
   if (!name || !email) return res.status(400).json({ error: 'Name and email required' });
   try {
+    if (supabaseDb.enabled && req.user.supabase) {
+      const created = await supabaseHr.createEmployee(req.body);
+      logAudit(req.user.id, req.user.name, 'create', 'employee', created.id, `Created ${created.name}`, req.ip);
+      addNotification('New Employee', `${created.name} joined ${department || 'the team'}.`, 'info', null);
+      await notifyProfiles({
+        event: 'employee_added',
+        title: 'New employee added',
+        message: `${created.name} joined ${department || 'the team'}.`,
+        type: 'info',
+        link: '/employees',
+        roles: HR_ROLES,
+        emailSubject: genericTemplate('New employee added', `${created.name} joined ${department || 'the team'}.`).subject,
+        emailHtml: genericTemplate('New employee added', `${created.name} joined ${department || 'the team'}.`).html,
+      });
+      sendEmailNotification(created.email, templates.employeeInvited(created.name, created.email));
+      return res.status(201).json({ ...created, authStatus: 'reset_required' });
+    }
     if (db.prepare('SELECT id FROM users WHERE email=?').get(email)) return res.status(400).json({ error: 'Email already exists' });
     const empId = genId('emp');
     const initials = name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
@@ -49,11 +91,16 @@ router.post('/', authenticateToken, requireAdminOrHR, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.put('/:id', authenticateToken, (req, res) => {
+router.put('/:id', authenticateToken, requireAdminOrHR, async (req, res) => {
   try {
+    if (supabaseDb.enabled && req.user.supabase) {
+      const updated = await supabaseHr.updateEmployee(req.user, req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: 'Not found' });
+      logAudit(req.user.id, req.user.name, 'update', 'employee', req.params.id, `Updated ${updated.name}`, req.ip);
+      return res.json(updated);
+    }
     const emp = db.prepare('SELECT * FROM employees WHERE id=?').get(req.params.id);
     if (!emp) return res.status(404).json({ error: 'Not found' });
-    if (req.user.role==='employee' && emp.email!==req.user.email) return res.status(403).json({ error: 'Access denied' });
     const { name,email,department,position,salary,status,phone,location,managerId,bio } = req.body;
     db.prepare('UPDATE employees SET name=COALESCE(?,name),email=COALESCE(?,email),department=COALESCE(?,department),position=COALESCE(?,position),salary=COALESCE(?,salary),status=COALESCE(?,status),phone=COALESCE(?,phone),location=COALESCE(?,location),managerId=COALESCE(?,managerId),bio=COALESCE(?,bio) WHERE id=?').run(name,email,department,position,salary,status,phone,location,managerId,bio,req.params.id);
     if (name||email) db.prepare('UPDATE users SET name=COALESCE(?,name),email=COALESCE(?,email) WHERE id=?').run(name,email,req.params.id);
@@ -62,8 +109,14 @@ router.put('/:id', authenticateToken, (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.delete('/:id', authenticateToken, requireAdminOrHR, (req, res) => {
+router.delete('/:id', authenticateToken, requireAdminOrHR, async (req, res) => {
   try {
+    if (supabaseDb.enabled && req.user.supabase) {
+      const updated = await supabaseHr.updateEmployee(req.user, req.params.id, { status: 'inactive' });
+      if (!updated) return res.status(404).json({ error: 'Not found' });
+      logAudit(req.user.id, req.user.name, 'deactivate', 'employee', req.params.id, `Deactivated ${updated.name}`, req.ip);
+      return res.json({ message: `${updated.name} deactivated` });
+    }
     const emp = db.prepare('SELECT * FROM employees WHERE id=?').get(req.params.id);
     if (!emp) return res.status(404).json({ error: 'Not found' });
     db.prepare("UPDATE employees SET status='inactive' WHERE id=?").run(req.params.id);

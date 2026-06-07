@@ -1,8 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Users, BarChart3, Calendar, Clock, Zap, Trophy, ArrowRight,
-  Shield, TrendingUp, CheckCircle2, Star, ChevronRight, Home,
-  Bell, GitBranch, Briefcase, Play
+  ArrowRight,
+  BarChart3,
+  Bell,
+  Briefcase,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  GitBranch,
+  Home,
+  Play,
+  Shield,
+  Star,
+  TrendingUp,
+  Trophy,
+  Users,
+  Zap,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -13,42 +27,60 @@ const STATS = [
   { value: '12K+', label: 'Employees Managed' },
   { value: '98%', label: 'Satisfaction Rate' },
   { value: '500+', label: 'Companies Trust Us' },
-  { value: '4.9★', label: 'Average Rating' },
+  { value: '4.9/5', label: 'Average Rating' },
 ];
 
 const FEATURES = [
   {
     icon: <Users size={22} />, color: '#22c55e', bg: 'rgba(34,197,94,0.12)',
-    title: 'Employee Management', desc: 'Centralize all employee data, docs, and lifecycle events in one beautiful interface.',
+    title: 'Employee Management', desc: 'Centralize employee records, documents, salary data, and lifecycle events in one secure workspace.',
   },
   {
     icon: <Calendar size={22} />, color: '#3b82f6', bg: 'rgba(59,130,246,0.12)',
-    title: 'Smart Leave Tracking', desc: 'Automate leave requests, approvals, and balance tracking with real-time notifications.',
+    title: 'Smart Leave Tracking', desc: 'Run leave requests, approvals, balances, holidays, and team scoping with clear ownership.',
   },
   {
     icon: <Clock size={22} />, color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)',
-    title: 'Attendance Insights', desc: 'Track check-ins, late arrivals, and attendance trends with detailed analytics.',
+    title: 'Attendance Insights', desc: 'Track check-ins, regularization, WFH requests, late arrivals, and attendance trends.',
   },
   {
     icon: <BarChart3 size={22} />, color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',
-    title: 'Performance Reviews', desc: 'Run quarterly reviews, radar charts and team comparisons effortlessly.',
+    title: 'Performance Reviews', desc: 'Manage review cycles, self-assessments, manager reviews, and performance analytics.',
   },
   {
     icon: <Zap size={22} />, color: '#ec4899', bg: 'rgba(236,72,153,0.12)',
-    title: 'AI Insights', desc: 'Detect burnout risks, attendance patterns and high-performer recognition with AI.',
+    title: 'AI Insights', desc: 'Surface people trends, audit signals, and HR insights without losing control of approvals.',
   },
   {
     icon: <Trophy size={22} />, color: '#f97316', bg: 'rgba(249,115,22,0.12)',
-    title: 'Gamified Leaderboard', desc: 'Motivate teams through points, badges, streaks and live leaderboards.',
+    title: 'Recognition and Growth', desc: 'Support teams with leaderboards, feedback loops, documents, and employee milestones.',
   },
   {
     icon: <Briefcase size={22} />, color: '#06b6d4', bg: 'rgba(6,182,212,0.12)',
-    title: 'Recruitment Pipeline', desc: 'Manage job openings, track candidates and advance them through hiring stages.',
+    title: 'Recruitment Pipeline', desc: 'Manage job openings, candidates, interview stages, and hire-to-employee handoff.',
   },
   {
     icon: <GitBranch size={22} />, color: '#a78bfa', bg: 'rgba(167,139,250,0.12)',
-    title: 'Org Chart', desc: 'Visualize your company hierarchy with an interactive, collapsible org tree.',
+    title: 'Org Visibility', desc: 'Keep departments, managers, role access, and reporting lines clear as the company grows.',
   },
+];
+
+const BENEFITS = [
+  { title: 'Less admin drag', desc: 'Reduce repetitive HR work with connected employee records, approvals, documents, and notifications.' },
+  { title: 'Better people decisions', desc: 'Give leaders a reliable view of attendance, leave, performance, payroll, and team movement.' },
+  { title: 'Cleaner employee experience', desc: 'Help employees request leave, check documents, view payslips, and track updates without chasing HR.' },
+];
+
+const WORKFLOWS = [
+  { title: 'Employees', desc: 'Request leave, regularize attendance, access payslips, upload documents, and follow approvals from one portal.' },
+  { title: 'Managers', desc: 'Review direct reports, approve team requests, track attendance, and stay ahead of performance cycles.' },
+  { title: 'HR teams', desc: 'Run onboarding, recruitment, payroll, compliance, announcements, and access approvals with role-safe controls.' },
+];
+
+const WHY_CHOOSE = [
+  { icon: <Shield size={18} />, title: 'Built for HR privacy', desc: 'Role-based access keeps payroll, salary, performance, and employee data scoped to the right people.' },
+  { icon: <TrendingUp size={18} />, title: 'Operational visibility', desc: 'Dashboards and reports help HR leaders spot bottlenecks before they become people problems.' },
+  { icon: <Bell size={18} />, title: 'Action stays moving', desc: 'Email and in-app notifications keep approvals, reviews, and hiring events from going quiet.' },
 ];
 
 const TESTIMONIALS = [
@@ -69,11 +101,10 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: '#070d0a', color: '#e2e8f0', minHeight: '100vh', overflowX: 'hidden' }}>
-      {/* Navbar */}
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 48px', height: 64,
+        padding: '0 clamp(16px, 4vw, 48px)', height: 64,
         background: scrolled ? 'rgba(7,13,10,0.85)' : 'transparent',
         backdropFilter: scrolled ? 'blur(16px)' : 'none',
         borderBottom: scrolled ? '1px solid rgba(34,197,94,0.12)' : 'none',
@@ -88,8 +119,8 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           }}>
             <Home size={16} color="white" />
           </div>
-          <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'white', letterSpacing: '-0.02em' }}>Grevya</span>
-          <span style={{ fontSize: '0.7rem', color: 'rgba(34,197,94,0.7)', fontWeight: 600, marginLeft: 2 }}>HR</span>
+          <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'white' }}>Grevya</span>
+          <span style={{ fontSize: '0.7rem', color: 'rgba(34,197,94,0.7)', fontWeight: 600 }}>HR</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
@@ -116,23 +147,20 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(34,197,94,0.5)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(34,197,94,0.35)'; }}
           >
-            Get Started →
+            Get Started
           </button>
         </div>
       </nav>
 
-      {/* Hero */}
       <section ref={heroRef} style={{
         minHeight: '100vh', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
         padding: '100px 24px 60px',
         position: 'relative', overflow: 'hidden',
       }}>
-        {/* Glow blobs */}
         <div style={{ position: 'absolute', top: '15%', left: '10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,197,94,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-        {/* Badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '6px 16px', borderRadius: 24,
@@ -145,7 +173,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
         <h1 style={{
           fontSize: 'clamp(2.4rem, 6vw, 4.5rem)', fontWeight: 800,
-          textAlign: 'center', lineHeight: 1.1, letterSpacing: '-0.04em',
+          textAlign: 'center', lineHeight: 1.1, letterSpacing: '-0.02em',
           maxWidth: 820, marginBottom: 24,
         }}>
           The HR Platform{' '}
@@ -160,12 +188,12 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
 
         <p style={{
           fontSize: '1.125rem', color: '#94a3b8', textAlign: 'center',
-          maxWidth: 580, lineHeight: 1.7, marginBottom: 40,
+          maxWidth: 620, lineHeight: 1.7, marginBottom: 40,
         }}>
-          Manage employees, leaves, attendance, performance, and recruitment — all in one intelligent platform built for modern teams.
+          Manage employees, leave, attendance, payroll, performance, and recruitment in one intelligent platform built for modern teams.
         </p>
 
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 60 }}>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 46 }}>
           <button
             onClick={onGetStarted}
             style={{
@@ -199,7 +227,15 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           </button>
         </div>
 
-        {/* Dashboard preview card */}
+        <div style={{ textAlign: 'center', marginBottom: 18 }}>
+          <div style={{ fontSize: '0.72rem', color: '#22c55e', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Product Preview
+          </div>
+          <div style={{ fontSize: '0.88rem', color: '#64748b', marginTop: 6 }}>
+            A quick look at the Grevya HR command center your teams use every day.
+          </div>
+        </div>
+
         <div style={{
           width: '100%', maxWidth: 960, borderRadius: 20,
           border: '1px solid rgba(34,197,94,0.2)',
@@ -208,7 +244,6 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           padding: '28px',
           boxShadow: '0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(34,197,94,0.1)',
         }}>
-          {/* Mini topbar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <div style={{ display: 'flex', gap: 6 }}>
               {['#ef4444', '#f59e0b', '#22c55e'].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />)}
@@ -217,30 +252,27 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
               <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)' }}>grevya.hr/dashboard</span>
             </div>
           </div>
-          {/* Mini stat cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 20 }}>
             {[
-              { label: 'Total Employees', val: '247', color: '#22c55e', icon: '👥' },
-              { label: 'Attendance Rate', val: '94%', color: '#3b82f6', icon: '🕐' },
-              { label: 'Pending Leaves', val: '12', color: '#f59e0b', icon: '📅' },
-              { label: 'Avg Performance', val: '88/100', color: '#8b5cf6', icon: '📈' },
+              { label: 'Total Employees', val: '247', color: '#22c55e', icon: 'EMP' },
+              { label: 'Attendance Rate', val: '94%', color: '#3b82f6', icon: 'ATT' },
+              { label: 'Pending Leaves', val: '12', color: '#f59e0b', icon: 'LEV' },
+              { label: 'Avg Performance', val: '88/100', color: '#8b5cf6', icon: 'PER' },
             ].map(s => (
               <div key={s.label} style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '14px 16px', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div style={{ fontSize: '1.1rem', marginBottom: 6 }}>{s.icon}</div>
+                <div style={{ fontSize: '0.62rem', color: s.color, fontWeight: 800, letterSpacing: '0.08em', marginBottom: 6 }}>{s.icon}</div>
                 <div style={{ fontWeight: 800, fontSize: '1.25rem', color: s.color, marginBottom: 2 }}>{s.val}</div>
                 <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', fontWeight: 500 }}>{s.label}</div>
               </div>
             ))}
           </div>
-          {/* Mini chart placeholder */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            {['📊 Performance Trend', '🧩 AI Insights'].map(t => (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+            {['Performance Trend', 'AI Insights'].map(t => (
               <div key={t} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '16px', border: '1px solid rgba(255,255,255,0.06)', minHeight: 80 }}>
                 <div style={{ fontSize: '0.7rem', color: 'rgba(34,197,94,0.7)', fontWeight: 600, marginBottom: 12 }}>{t}</div>
-                {/* Mini bars */}
                 <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end', height: 40 }}>
                   {[55, 70, 62, 80, 74, 88, 92].map((h, i) => (
-                    <div key={i} style={{ flex: 1, height: `${h}%`, background: `rgba(34,197,94,${0.2 + i * 0.08})`, borderRadius: '3px 3px 0 0', transition: '300ms' }} />
+                    <div key={i} style={{ flex: 1, height: `${h}%`, background: `rgba(34,197,94,${0.2 + i * 0.08})`, borderRadius: '3px 3px 0 0' }} />
                   ))}
                 </div>
               </div>
@@ -249,32 +281,30 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
-      {/* Stats bar */}
       <section style={{
-        padding: '48px 48px',
+        padding: '48px clamp(20px, 5vw, 48px)',
         background: 'rgba(34,197,94,0.05)',
         borderTop: '1px solid rgba(34,197,94,0.1)',
         borderBottom: '1px solid rgba(34,197,94,0.1)',
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, maxWidth: 900, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 24, maxWidth: 900, margin: '0 auto' }}>
           {STATS.map(s => (
             <div key={s.label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#22c55e', letterSpacing: '-0.03em', marginBottom: 6 }}>{s.value}</div>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#22c55e', letterSpacing: '-0.02em', marginBottom: 6 }}>{s.value}</div>
               <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Features grid */}
-      <section style={{ padding: '96px 48px' }}>
+      <section style={{ padding: '96px clamp(20px, 5vw, 48px)' }}>
         <div style={{ textAlign: 'center', marginBottom: 60 }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Everything You Need</span>
-          <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, marginTop: 12, letterSpacing: '-0.03em', color: 'white' }}>
+          <h2 style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)', fontWeight: 800, marginTop: 12, letterSpacing: '-0.02em', color: 'white' }}>
             Powerful features, zero complexity
           </h2>
-          <p style={{ color: '#64748b', marginTop: 14, maxWidth: 480, margin: '14px auto 0', fontSize: '0.95rem', lineHeight: 1.7 }}>
-            From day-one onboarding to performance reviews — Grevya handles it all.
+          <p style={{ color: '#64748b', marginTop: 14, maxWidth: 520, margin: '14px auto 0', fontSize: '0.95rem', lineHeight: 1.7 }}>
+            From day-one onboarding to performance reviews, Grevya handles the complete employee lifecycle.
           </p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, maxWidth: 1100, margin: '0 auto' }}>
@@ -290,7 +320,7 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
                 (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)';
                 (e.currentTarget as HTMLElement).style.borderColor = `${f.color}40`;
                 (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)';
-                (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 32px rgba(0,0,0,0.3)`;
+                (e.currentTarget as HTMLElement).style.boxShadow = '0 12px 32px rgba(0,0,0,0.3)';
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
@@ -309,10 +339,87 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section style={{ padding: '80px 48px', background: 'rgba(255,255,255,0.02)' }}>
+      <section style={{ padding: '80px clamp(20px, 5vw, 48px)', background: 'rgba(255,255,255,0.02)' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32, alignItems: 'start' }}>
+          <div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Built for teams</span>
+            <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', fontWeight: 800, marginTop: 12, color: 'white', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+              Benefits for HR leaders and growing organizations
+            </h2>
+            <p style={{ color: '#64748b', marginTop: 14, fontSize: '0.95rem', lineHeight: 1.7 }}>
+              Grevya keeps people operations organized without making employees learn a complicated system.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+            {BENEFITS.map(b => (
+              <div key={b.title} style={{ background: 'rgba(7,13,10,0.72)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 22 }}>
+                <CheckCircle2 size={18} color="#22c55e" style={{ marginBottom: 12 }} />
+                <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem', marginBottom: 8 }}>{b.title}</div>
+                <div style={{ color: '#64748b', fontSize: '0.8rem', lineHeight: 1.6 }}>{b.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section style={{ padding: '88px clamp(20px, 5vw, 48px)' }}>
+        <div style={{ textAlign: 'center', marginBottom: 44 }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Workflow Overview</span>
+          <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', fontWeight: 800, marginTop: 12, color: 'white', letterSpacing: '-0.02em' }}>
+            Clear paths for employees, managers, and HR
+          </h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 18, maxWidth: 1000, margin: '0 auto' }}>
+          {WORKFLOWS.map((item, index) => (
+            <div key={item.title} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 24 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.2)', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.78rem', marginBottom: 16 }}>
+                {index + 1}
+              </div>
+              <div style={{ color: 'white', fontWeight: 700, fontSize: '1rem', marginBottom: 8 }}>{item.title}</div>
+              <div style={{ color: '#64748b', fontSize: '0.82rem', lineHeight: 1.65 }}>{item.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ padding: '80px clamp(20px, 5vw, 48px)', background: 'rgba(34,197,94,0.05)', borderTop: '1px solid rgba(34,197,94,0.1)', borderBottom: '1px solid rgba(34,197,94,0.1)' }}>
+        <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', marginBottom: 34 }}>
+            <div>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Why Choose Grevya</span>
+              <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.4rem)', fontWeight: 800, margin: '12px 0 0', color: 'white', letterSpacing: '-0.02em' }}>
+                Secure, focused, and built for everyday HR work
+              </h2>
+            </div>
+            <button
+              onClick={onGetStarted}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 18px', borderRadius: 12, border: '1px solid rgba(34,197,94,0.35)',
+                background: 'rgba(34,197,94,0.08)', color: '#4ade80', fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              Explore Portal <ChevronRight size={16} />
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 18 }}>
+            {WHY_CHOOSE.map(item => (
+              <div key={item.title} style={{ background: 'rgba(7,13,10,0.72)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 24 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 11, background: 'rgba(34,197,94,0.12)', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                  {item.icon}
+                </div>
+                <div style={{ color: 'white', fontWeight: 700, fontSize: '0.95rem', marginBottom: 8 }}>{item.title}</div>
+                <div style={{ color: '#64748b', fontSize: '0.8rem', lineHeight: 1.6 }}>{item.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section style={{ padding: '80px clamp(20px, 5vw, 48px)', background: 'rgba(255,255,255,0.02)' }}>
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'white', letterSpacing: '-0.03em' }}>Loved by HR teams</h2>
+          <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>Loved by HR teams</h2>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, maxWidth: 960, margin: '0 auto' }}>
           {TESTIMONIALS.map(t => (
@@ -333,22 +440,21 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
-      {/* CTA */}
-      <section style={{ padding: '96px 48px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      <section style={{ padding: '96px clamp(20px, 5vw, 48px)', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(34,197,94,0.1) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 24,
           background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-          backdropFilter: 'blur(12px)', borderRadius: 24, padding: '48px 64px',
+          backdropFilter: 'blur(12px)', borderRadius: 24, padding: '48px clamp(24px, 6vw, 64px)',
           maxWidth: 680, width: '100%', flexDirection: 'column',
           boxShadow: '0 32px 80px rgba(0,0,0,0.4)',
         }}>
           <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ready to get started?</div>
-          <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: 'white', letterSpacing: '-0.03em', lineHeight: 1.2, margin: 0 }}>
+          <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: 'white', letterSpacing: '-0.02em', lineHeight: 1.2, margin: 0 }}>
             Transform your HR operations today
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.9rem', lineHeight: 1.7, margin: 0 }}>
-            Join 500+ companies using Grevya to manage their most valuable asset — their people.
+            Join 500+ companies using Grevya to manage their most valuable asset: their people.
           </p>
           <button
             onClick={onGetStarted}
@@ -368,15 +474,14 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ padding: '32px 48px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <footer style={{ padding: '32px clamp(20px, 5vw, 48px)', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 24, height: 24, borderRadius: 7, background: 'linear-gradient(135deg, #22c55e, #16a34a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Home size={12} color="white" />
           </div>
           <span style={{ fontWeight: 700, color: 'white', fontSize: '0.875rem' }}>Grevya HR</span>
         </div>
-        <div style={{ fontSize: '0.78rem', color: '#475569' }}>© 2024 Grevya. Built with ❤ for HR teams everywhere.</div>
+        <div style={{ fontSize: '0.78rem', color: '#475569' }}>(c) 2026 Grevya. Built for HR teams everywhere.</div>
         <div style={{ display: 'flex', gap: 16 }}>
           {['Privacy', 'Terms', 'Support'].map(l => (
             <span key={l} style={{ fontSize: '0.78rem', color: '#475569', cursor: 'pointer' }}

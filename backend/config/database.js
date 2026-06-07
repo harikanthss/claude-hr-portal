@@ -102,25 +102,77 @@ const SCHEMA_SQL = `
   );
 `;
 
+// ── Performance indexes ───────────────────────────────────────────────────────
+const INDEX_SQL = `
+  CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email);
+  CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department);
+  CREATE INDEX IF NOT EXISTS idx_employees_status ON employees(status);
+  CREATE INDEX IF NOT EXISTS idx_leave_employeeId ON leave_requests(employeeId);
+  CREATE INDEX IF NOT EXISTS idx_leave_status ON leave_requests(status);
+  CREATE INDEX IF NOT EXISTS idx_attendance_employeeId ON attendance_records(employeeId);
+  CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance_records(date);
+  CREATE INDEX IF NOT EXISTS idx_payslips_employeeId ON payslips(employeeId);
+  CREATE INDEX IF NOT EXISTS idx_expenses_employeeId ON expenses(employeeId);
+  CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log(timestamp);
+  CREATE INDEX IF NOT EXISTS idx_audit_userId ON audit_log(userId);
+  CREATE INDEX IF NOT EXISTS idx_notifications_userId ON notifications(userId);
+  CREATE INDEX IF NOT EXISTS idx_notifications_isRead ON notifications(isRead);
+  CREATE INDEX IF NOT EXISTS idx_shifts_employeeId ON shifts(employeeId);
+  CREATE INDEX IF NOT EXISTS idx_shifts_date ON shifts(date);
+  CREATE INDEX IF NOT EXISTS idx_revoked_tokens_token ON revoked_tokens(token);
+`;
+
 let db;
 
 if (USE_POSTGRES) {
   const { Pool } = require('pg');
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
   });
+
+  // PostgreSQL-compatible wrapper
   db = {
-    _pool: pool, isPostgres: true,
-    prepare: () => ({ run: () => {}, get: () => null, all: () => [] }),
+    _pool: pool,
+    isPostgres: true,
+    // Provide a prepare-like interface that works with PG
+    prepare: (sql) => {
+      // Convert SQLite ? params to PG $1, $2, etc.
+      let idx = 0;
+      const pgSql = sql
+        .replace(/\?/g, () => `$${++idx}`)
+        .replace(/INSERT OR IGNORE/gi, 'INSERT')
+        .replace(/INSERT OR REPLACE/gi, 'INSERT')
+        .replace(/strftime\('%Y-%m',\s*(\w+)\)/gi, "to_char($1::date, 'YYYY-MM')")
+        .replace(/datetime\('now',\s*'([^']+)'\)/gi, `NOW() + INTERVAL '$1'`);
+      return {
+        run: (...params) => { pool.query(pgSql, params).catch(err => console.error('[PG run]', err.message)); },
+        get: (...params) => {
+          // Synchronous-like fallback — NOT recommended for production PG
+          console.warn('[PG] Synchronous .get() called — use queryOne() instead');
+          return null;
+        },
+        all: (...params) => {
+          console.warn('[PG] Synchronous .all() called — use queryAll() instead');
+          return [];
+        },
+      };
+    },
     queryOne: async (sql, params = []) => { const r = await pool.query(sql, params); return r.rows[0]; },
     queryAll: async (sql, params = []) => { const r = await pool.query(sql, params); return r.rows; },
     query: (sql, params = []) => pool.query(sql, params),
   };
+
   (async () => {
-    await pool.query(SCHEMA_SQL.replace(/CREATE TABLE IF NOT EXISTS/g, 'CREATE TABLE IF NOT EXISTS'));
+    const pgSchema = SCHEMA_SQL
+      .replace(/INTEGER PRIMARY KEY/g, 'SERIAL PRIMARY KEY')
+      .replace(/TEXT PRIMARY KEY/g, 'TEXT PRIMARY KEY');
+    await pool.query(pgSchema);
+    // Create indexes (convert SQLite syntax)
+    const pgIndexes = INDEX_SQL.replace(/IF NOT EXISTS /g, 'IF NOT EXISTS ');
+    await pool.query(pgIndexes);
     await seedIfEmpty(pool, true);
-  })().catch(console.error);
+  })().catch(err => console.error('[PG Init]', err.message));
 
 } else {
   const Database = require('better-sqlite3');
@@ -130,21 +182,30 @@ if (USE_POSTGRES) {
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('foreign_keys = ON');
   sqlite.exec(SCHEMA_SQL);
+  sqlite.exec(INDEX_SQL);
   db = sqlite;
   db.isPostgres = false;
   db.queryOne = (sql, params = []) => Promise.resolve(sqlite.prepare(sql).get(...params));
   db.queryAll = (sql, params = []) => Promise.resolve(sqlite.prepare(sql).all(...params));
   db.query = (sql, params = []) => Promise.resolve({ rows: sqlite.prepare(sql).all(...params) });
-  seedIfEmpty(sqlite, false).catch(console.error);
+  seedIfEmpty(sqlite, false).catch(err => console.error('[Seed]', err.message));
 }
 
-async function run(db, isPg, sql, params = []) {
+async function run(dbConn, isPg, sql, params = []) {
   if (isPg) {
     let i = 0;
-    const pgSql = sql.replace(/\?/g, () => `$${++i}`);
-    return db.query(pgSql, params);
+    const pgSql = sql
+      .replace(/INSERT OR IGNORE/gi, 'INSERT')
+      .replace(/INSERT OR REPLACE/gi, 'INSERT')
+      .replace(/\?/g, () => `$${++i}`);
+    try {
+      return await dbConn.query(pgSql, params);
+    } catch (err) {
+      // Ignore duplicate key errors during seeding
+      if (err.code !== '23505') console.error('[Seed PG]', err.message);
+    }
   }
-  return db.prepare(sql).run(...params);
+  return dbConn.prepare(sql).run(...params);
 }
 
 async function seedIfEmpty(dbConn, isPg) {
@@ -170,23 +231,17 @@ async function seedIfEmpty(dbConn, isPg) {
   for (const u of users) await run(dbConn, isPg, 'INSERT INTO users (id,name,email,password,role,avatar) VALUES (?,?,?,?,?,?)', u);
 
   const emps = [
-    // Top level: no manager (CEO-level HR and Engineering heads)
     ['e3','Ravi Nair','manager@grevya.com','Engineering','Engineering Manager','active','2020-01-20',145000,95,99,'RN','+91 98765 00002','Bangalore',4200,90,null],
     ['e4','Divya Kumar','hr@grevya.com','HR','HR Manager','active','2019-11-05',110000,90,96,'DK','+91 98765 00003','Delhi',2680,38,null],
-    // Engineering team — report to Ravi (e3)
     ['e1','Kiran Patel','employee@grevya.com','Engineering','Frontend Developer','active','2022-03-15',85000,92,98,'KP','+91 98765 43210','Bangalore',2840,45,'e3'],
     ['e9','Vikram Joshi','vikram@grevya.com','Engineering','DevOps Engineer','active','2021-12-01',92000,94,98,'VJ','+91 10987 65432','Hyderabad',3800,75,'e3'],
-    // Design team — report to Ravi (e3)
     ['e2','Sneha Rao','sneha@grevya.com','Design','UX Designer','active','2021-08-10',78000,88,95,'SR','+91 98765 00001','Mumbai',3120,62,'e3'],
     ['e6','Priya Sharma','priya@grevya.com','Design','UI Designer','active','2023-01-10',78000,85,91,'PS','+91 65432 10987','Hyderabad',1950,28,'e3'],
     ['e12','Pooja Reddy','pooja@grevya.com','Design','Product Designer','active','2022-02-14',81000,90,95,'PR','+91 87654 09876','Pune',2560,41,'e3'],
-    // Sales team — report to Divya (e4)
     ['e5','Arjun Mehta','arjun@grevya.com','Sales','Account Executive','on_leave','2023-01-10',65000,75,85,'AM','+91 98765 00004','Mumbai',1620,12,'e4'],
     ['e11','Suresh Pillai','suresh@grevya.com','Sales','Sales Executive','active','2023-07-20',62000,81,89,'SP','+91 98765 12345','Chennai',1340,15,'e4'],
-    // Finance & Marketing — report to Divya (e4)
     ['e7','Rahul Gupta','rahul@grevya.com','Finance','Financial Analyst','active','2022-06-01',88000,87,93,'RG','+91 32109 87654','Kolkata',2100,22,'e4'],
     ['e8','Ananya Singh','ananya@grevya.com','Marketing','Marketing Specialist','active','2023-04-15',70000,83,92,'AS','+91 21098 76543','Bangalore',1780,18,'e4'],
-    // Operations — inactive
     ['e10','Meera Iyer','meera@grevya.com','Operations','Operations Manager','inactive','2020-05-10',98000,76,78,'MI','+91 09876 54321','Mumbai',890,3,'e4'],
   ];
   for (const e of emps) await run(dbConn, isPg, 'INSERT INTO employees (id,name,email,department,position,status,joinDate,salary,performance,attendance,avatar,phone,location,points,streak,managerId) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', e);
@@ -202,6 +257,7 @@ async function seedIfEmpty(dbConn, isPg) {
   ];
   for (const l of leaves) await run(dbConn, isPg, 'INSERT INTO leave_requests (id,employeeId,employeeName,employeeAvatar,type,startDate,endDate,days,reason,status,appliedOn,approvedBy,comments) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', l);
 
+  // Attendance seed
   const empIds = ['e1','e2','e3','e4','e5','e6','e7','e8','e9','e11','e12'];
   for (let day = 1; day <= 30; day++) {
     const dateStr = `2024-03-${String(day).padStart(2,'0')}`;
@@ -221,6 +277,7 @@ async function seedIfEmpty(dbConn, isPg) {
     }
   }
 
+  // Payslip seed
   const months = ['January','February','March'];
   const salaries = {e1:85000,e2:78000,e3:145000,e4:110000,e5:65000,e6:78000,e7:88000,e8:70000,e9:92000,e11:62000,e12:81000};
   for (let mi=0; mi<months.length; mi++) {
@@ -232,6 +289,7 @@ async function seedIfEmpty(dbConn, isPg) {
     }
   }
 
+  // Misc seed data
   const misc = [
     ['INSERT INTO jobs (id,title,department,type,location,openings,posted,status) VALUES (?,?,?,?,?,?,?,?)', ['j1','Senior Backend Engineer','Engineering','full_time','Bangalore',2,'2024-03-01','active']],
     ['INSERT INTO jobs (id,title,department,type,location,openings,posted,status) VALUES (?,?,?,?,?,?,?,?)', ['j2','Product Designer','Design','full_time','Remote',1,'2024-03-05','active']],
@@ -247,38 +305,48 @@ async function seedIfEmpty(dbConn, isPg) {
     ['INSERT INTO shifts (id,employeeId,employeeName,date,shiftType,startTime,endTime,status,notes,createdBy) VALUES (?,?,?,?,?,?,?,?,?,?)', ['sh2','e9','Vikram Joshi','2024-03-25','night','22:00','06:00','scheduled','Server maintenance','demo-mgr']],
     ['INSERT INTO audit_log (id,userId,userName,action,resource,resourceId,details,ipAddress,timestamp) VALUES (?,?,?,?,?,?,?,?,?)', ['audit1','demo-hr','Divya Kumar','create','employee','e11','Created Suresh Pillai','10.0.0.1','2024-03-14T10:00:00']],
   ];
-  for (const [sql, params] of misc) await run(dbConn, isPg, sql, params);
-
-  const obTasks = ['Send welcome email','Set up workstation','Create company email','Add to Slack channels','Introduce to team','Complete HR policy forms','Submit ID proof'];
-  for (let i=0; i<obTasks.length; i++) {
-    await run(dbConn, isPg, 'INSERT INTO onboarding_tasks (id,employeeId,employeeName,employeeAvatar,department,position,startDate,buddy,taskLabel,taskDueDay,taskAssignee,taskNotes,done) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', [`ob1-t${i}`,'ob1','Deepak Sharma','DS','Engineering','Full-stack Developer','2024-04-01','Kiran Patel',obTasks[i],i,'HR',null,i<5?1:0]);
-    await run(dbConn, isPg, 'INSERT INTO onboarding_tasks (id,employeeId,employeeName,employeeAvatar,department,position,startDate,buddy,taskLabel,taskDueDay,taskAssignee,taskNotes,done) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', [`ob2-t${i}`,'ob2','Lavanya Krishnan','LK','Design','UI Designer','2024-04-08','Priya Sharma',obTasks[i],i,'HR',null,i<3?1:0]);
+  for (const [sql, params] of misc) {
+    try { await run(dbConn, isPg, sql, params); } catch (err) { console.error('[Seed misc]', err.message); }
   }
 
+  // Onboarding tasks
+  const obTasks = ['Send welcome email','Set up workstation','Create company email','Add to Slack channels','Introduce to team','Complete HR policy forms','Submit ID proof'];
+  for (let i=0; i<obTasks.length; i++) {
+    try {
+      await run(dbConn, isPg, 'INSERT INTO onboarding_tasks (id,employeeId,employeeName,employeeAvatar,department,position,startDate,buddy,taskLabel,taskDueDay,taskAssignee,taskNotes,done) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', [`ob1-t${i}`,'ob1','Deepak Sharma','DS','Engineering','Full-stack Developer','2024-04-01','Kiran Patel',obTasks[i],i,'HR',null,i<5?1:0]);
+      await run(dbConn, isPg, 'INSERT INTO onboarding_tasks (id,employeeId,employeeName,employeeAvatar,department,position,startDate,buddy,taskLabel,taskDueDay,taskAssignee,taskNotes,done) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)', [`ob2-t${i}`,'ob2','Lavanya Krishnan','LK','Design','UI Designer','2024-04-08','Priya Sharma',obTasks[i],i,'HR',null,i<3?1:0]);
+    } catch (err) { console.error('[Seed onboarding]', err.message); }
+  }
 
   // Extra expenses
   const extraExpenses = [
-    ['INSERT INTO expenses (id,employeeId,employeeName,employeeAvatar,category,amount,description,date,status,submittedOn) VALUES (?,?,?,?,?,?,?,?,?,?)', [id('ex'),'e3','Ravi Nair','RN','Travel',12000,'Flight to Delhi conference','2024-03-20','approved','2024-03-21T10:00:00']],
-    ['INSERT INTO expenses (id,employeeId,employeeName,employeeAvatar,category,amount,description,date,status,submittedOn) VALUES (?,?,?,?,?,?,?,?,?,?)', [id('ex'),'e9','Vikram Joshi','VJ','Software',8500,'AWS training certification','2024-03-15','pending','2024-03-16T10:00:00']],
-    ['INSERT INTO expenses (id,employeeId,employeeName,employeeAvatar,category,amount,description,date,status,submittedOn) VALUES (?,?,?,?,?,?,?,?,?,?)', [id('ex'),'e4','Divya Kumar','DK','Food',3200,'Team lunch','2024-03-22','approved','2024-03-23T10:00:00']],
+    [id('ex'),'e3','Ravi Nair','RN','Travel',12000,'Flight to Delhi conference','2024-03-20','approved','2024-03-21T10:00:00'],
+    [id('ex'),'e9','Vikram Joshi','VJ','Software',8500,'AWS training certification','2024-03-15','pending','2024-03-16T10:00:00'],
+    [id('ex'),'e4','Divya Kumar','DK','Food',3200,'Team lunch','2024-03-22','approved','2024-03-23T10:00:00'],
   ];
-  for (const [sql, params] of extraExpenses) await run(dbConn, isPg, sql, params);
+  for (const params of extraExpenses) {
+    try { await run(dbConn, isPg, 'INSERT INTO expenses (id,employeeId,employeeName,employeeAvatar,category,amount,description,date,status,submittedOn) VALUES (?,?,?,?,?,?,?,?,?,?)', params); } catch (err) { console.error('[Seed expenses]', err.message); }
+  }
 
   // Extra jobs
   const extraJobs = [
-    ['INSERT INTO jobs (id,title,department,type,location,openings,posted,status) VALUES (?,?,?,?,?,?,?,?)', [id('job'),'Sales Manager','Sales','full_time','Delhi',1,'2024-03-12','active']],
-    ['INSERT INTO jobs (id,title,department,type,location,openings,posted,status) VALUES (?,?,?,?,?,?,?,?)', [id('job'),'DevOps Lead','Engineering','full_time','Hyderabad',1,'2024-03-18','active']],
-    ['INSERT INTO jobs (id,title,department,type,location,openings,posted,status) VALUES (?,?,?,?,?,?,?,?)', [id('job'),'Marketing Analyst','Marketing','full_time','Bangalore',2,'2024-03-20','active']],
+    [id('job'),'Sales Manager','Sales','full_time','Delhi',1,'2024-03-12','active'],
+    [id('job'),'DevOps Lead','Engineering','full_time','Hyderabad',1,'2024-03-18','active'],
+    [id('job'),'Marketing Analyst','Marketing','full_time','Bangalore',2,'2024-03-20','active'],
   ];
-  for (const [sql, params] of extraJobs) await run(dbConn, isPg, sql, params);
+  for (const params of extraJobs) {
+    try { await run(dbConn, isPg, 'INSERT INTO jobs (id,title,department,type,location,openings,posted,status) VALUES (?,?,?,?,?,?,?,?)', params); } catch (err) { console.error('[Seed jobs]', err.message); }
+  }
 
   // Extra candidates
   const extraCandidates = [
-    ['INSERT INTO candidates (id,name,email,phone,position,department,stage,appliedDate,avatar,score,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)', [id('cand'),'Prathik Kumar','prathik@email.com','+91 99000','Product Designer','Design','screening','2024-03-12','PK',78,'Good portfolio']],
-    ['INSERT INTO candidates (id,name,email,phone,position,department,stage,appliedDate,avatar,score,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)', [id('cand'),'Arjun Dev','arjun.d@email.com','+91 99002','DevOps Lead','Engineering','offer','2024-03-05','AD',88,'Strong AWS skills']],
-    ['INSERT INTO candidates (id,name,email,phone,position,department,stage,appliedDate,avatar,score,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)', [id('cand'),'Meena Sharma','meena@email.com','+91 99003','Marketing Analyst','Marketing','hired','2024-02-28','MS',94,'Excellent hire']],
+    [id('cand'),'Prathik Kumar','prathik@email.com','+91 99000','Product Designer','Design','screening','2024-03-12','PK',78,'Good portfolio'],
+    [id('cand'),'Arjun Dev','arjun.d@email.com','+91 99002','DevOps Lead','Engineering','offer','2024-03-05','AD',88,'Strong AWS skills'],
+    [id('cand'),'Meena Sharma','meena@email.com','+91 99003','Marketing Analyst','Marketing','hired','2024-02-28','MS',94,'Excellent hire'],
   ];
-  for (const [sql, params] of extraCandidates) await run(dbConn, isPg, sql, params);
+  for (const params of extraCandidates) {
+    try { await run(dbConn, isPg, 'INSERT INTO candidates (id,name,email,phone,position,department,stage,appliedDate,avatar,score,note) VALUES (?,?,?,?,?,?,?,?,?,?,?)', params); } catch (err) { console.error('[Seed candidates]', err.message); }
+  }
 
   // Performance reviews
   const perfData = [
@@ -289,16 +357,16 @@ async function seedIfEmpty(dbConn, isPg) {
     ['e7',80,84,78,82,76,86,'Solid financial analysis.','Lead quarterly budget review'],
   ];
   for (const [empId,...scores] of perfData) {
-    const [ts,cs,ls,ds,is,tws,comments,goals] = scores;
-    const overall = Math.round((Number(ts)+Number(cs)+Number(ls)+Number(ds)+Number(is)+Number(tws))/6);
-    await run(dbConn, isPg, 'INSERT INTO performance_reviews (id,employeeId,reviewerId,period,technicalScore,communicationScore,leadershipScore,deliveryScore,innovationScore,teamworkScore,overallScore,comments,goals,status,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-      [id('perf'),empId,'demo-mgr','Q1 2024',ts,cs,ls,ds,is,tws,overall,comments,goals,'completed','2024-03-28T10:00:00','2024-03-28T10:00:00']);
-    await run(dbConn, isPg, 'UPDATE employees SET performance=? WHERE id=?', [overall, empId]);
+    try {
+      const [ts,cs,ls,ds,is,tws,comments,goals] = scores;
+      const overall = Math.round((Number(ts)+Number(cs)+Number(ls)+Number(ds)+Number(is)+Number(tws))/6);
+      await run(dbConn, isPg, 'INSERT INTO performance_reviews (id,employeeId,reviewerId,period,technicalScore,communicationScore,leadershipScore,deliveryScore,innovationScore,teamworkScore,overallScore,comments,goals,status,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        [id('perf'),empId,'demo-mgr','Q1 2024',ts,cs,ls,ds,is,tws,overall,comments,goals,'completed','2024-03-28T10:00:00','2024-03-28T10:00:00']);
+      await run(dbConn, isPg, 'UPDATE employees SET performance=? WHERE id=?', [overall, empId]);
+    } catch (err) { console.error('[Seed perf]', err.message); }
   }
 
-
-
-  // Seed calendar events + Indian holidays 2024
+  // Calendar events + Indian holidays 2024
   const calendarSeeds = [
     [id('ev'),'Holi','2024-03-25',null,'holiday','#f59e0b','Indian National Holiday','system'],
     [id('ev'),'Good Friday','2024-03-29',null,'holiday','#3b82f6','Indian National Holiday','system'],
@@ -314,28 +382,23 @@ async function seedIfEmpty(dbConn, isPg) {
     [id('ev'),'New Employee Onboarding','2024-04-01',null,'event','#06b6d4','Deepak and Lavanya joining','demo-hr'],
   ];
   for (const row of calendarSeeds) {
-    try { await run(dbConn, isPg, 'INSERT INTO calendar_events (id,title,date,endDate,type,color,description,createdBy) VALUES (?,?,?,?,?,?,?,?)', row); } catch {}
-  }
-  // Seed documents
-  const docSeeds = [
-    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      ['doc-1',null,'Employee Handbook 2024.pdf','application/pdf','policy','/uploads/sample-handbook.pdf',245760,'Divya Kumar','2024-01-15T10:00:00','Company policies and procedures']],
-    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      ['doc-2',null,'Leave Policy 2024.pdf','application/pdf','policy','/uploads/leave-policy.pdf',102400,'Divya Kumar','2024-01-15T10:00:00','Leave entitlements and application process']],
-    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      ['doc-3',null,'Code of Conduct.pdf','application/pdf','policy','/uploads/code-of-conduct.pdf',88064,'Divya Kumar','2024-02-01T09:00:00','Workplace conduct guidelines']],
-    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      ['doc-4','e1','Kiran_Patel_Offer_Letter.pdf','application/pdf','contract','/uploads/offer-e1.pdf',65536,'Divya Kumar','2022-03-10T10:00:00','Offer letter for Kiran Patel']],
-    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      ['doc-5','e2','Sneha_Rao_Appraisal_2023.pdf','application/pdf','appraisal','/uploads/appraisal-e2.pdf',78432,'Ravi Nair','2024-01-20T14:00:00','Annual appraisal document 2023']],
-    ['INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)',
-      ['doc-6',null,'IT Security Policy.pdf','application/pdf','policy','/uploads/it-security.pdf',112640,'Divya Kumar','2024-02-15T11:00:00','Information security guidelines']],
-  ];
-  for (const [sql, params] of docSeeds) {
-    try { await run(dbConn, isPg, sql, params); } catch {}
+    try { await run(dbConn, isPg, 'INSERT INTO calendar_events (id,title,date,endDate,type,color,description,createdBy) VALUES (?,?,?,?,?,?,?,?)', row); } catch (err) { console.error('[Seed calendar]', err.message); }
   }
 
-  // Seed department budgets
+  // Documents
+  const docSeeds = [
+    ['doc-1',null,'Employee Handbook 2024.pdf','application/pdf','policy','/uploads/sample-handbook.pdf',245760,'Divya Kumar','2024-01-15T10:00:00','Company policies and procedures'],
+    ['doc-2',null,'Leave Policy 2024.pdf','application/pdf','policy','/uploads/leave-policy.pdf',102400,'Divya Kumar','2024-01-15T10:00:00','Leave entitlements and application process'],
+    ['doc-3',null,'Code of Conduct.pdf','application/pdf','policy','/uploads/code-of-conduct.pdf',88064,'Divya Kumar','2024-02-01T09:00:00','Workplace conduct guidelines'],
+    ['doc-4','e1','Kiran_Patel_Offer_Letter.pdf','application/pdf','contract','/uploads/offer-e1.pdf',65536,'Divya Kumar','2022-03-10T10:00:00','Offer letter for Kiran Patel'],
+    ['doc-5','e2','Sneha_Rao_Appraisal_2023.pdf','application/pdf','appraisal','/uploads/appraisal-e2.pdf',78432,'Ravi Nair','2024-01-20T14:00:00','Annual appraisal document 2023'],
+    ['doc-6',null,'IT Security Policy.pdf','application/pdf','policy','/uploads/it-security.pdf',112640,'Divya Kumar','2024-02-15T11:00:00','Information security guidelines'],
+  ];
+  for (const params of docSeeds) {
+    try { await run(dbConn, isPg, 'INSERT INTO documents (id,employeeId,name,type,category,filePath,fileSize,uploadedBy,uploadedAt,description) VALUES (?,?,?,?,?,?,?,?,?,?)', params); } catch (err) { console.error('[Seed docs]', err.message); }
+  }
+
+  // Department budgets
   const budgetData = [
     ['Engineering','March',2024,500000],['Design','March',2024,200000],
     ['Sales','March',2024,300000],['HR','March',2024,150000],
@@ -349,8 +412,9 @@ async function seedIfEmpty(dbConn, isPg) {
         'INSERT OR IGNORE INTO department_budgets (id,department,month,year,budgetAmount,spentAmount,createdBy,updatedAt) VALUES (?,?,?,?,?,0,?,?)',
         [id('bud'), dept, month, year, amount, 'Divya Kumar', new Date().toISOString()]
       );
-    } catch {}
+    } catch (err) { console.error('[Seed budgets]', err.message); }
   }
+
   console.log('✅ Database seeded successfully');
 }
 

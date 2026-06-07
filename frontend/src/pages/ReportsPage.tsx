@@ -91,14 +91,14 @@ export default function ReportsPage() {
         <div className="card p-6">
           <h3 style={{ marginBottom:16 }}>Leave Type Distribution</h3>
           <div style={{ display:'flex', alignItems:'center', gap:20 }}>
-            <ResponsiveContainer width={180} height={180}>
-              <PieChart>
+            <div style={{ width: 180, height: 180, flexShrink: 0 }}>
+              <PieChart width={180} height={180}>
                 <Pie data={leaveTypeStats} cx="50%" cy="50%" outerRadius={75} paddingAngle={4} dataKey="value">
                   {leaveTypeStats.map((e,i)=><Cell key={i} fill={e.color}/>)}
                 </Pie>
                 <Tooltip contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, fontSize:12 }}/>
               </PieChart>
-            </ResponsiveContainer>
+            </div>
             <div style={{ flex:1 }}>
               {leaveTypeStats.map(item=>(
                 <div key={item.name} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
@@ -129,14 +129,14 @@ export default function ReportsPage() {
         <div className="card p-6">
           <h3 style={{ marginBottom:16 }}>Expense Claims Summary</h3>
           <div style={{ display:'flex', alignItems:'center', gap:20 }}>
-            <ResponsiveContainer width={180} height={180}>
-              <PieChart>
+            <div style={{ width: 180, height: 180, flexShrink: 0 }}>
+              <PieChart width={180} height={180}>
                 <Pie data={expenseStats} cx="50%" cy="50%" outerRadius={75} paddingAngle={4} dataKey="value">
                   {expenseStats.map((e,i)=><Cell key={i} fill={e.color}/>)}
                 </Pie>
                 <Tooltip contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, fontSize:12 }}/>
               </PieChart>
-            </ResponsiveContainer>
+            </div>
             <div style={{ flex:1 }}>
               {expenseStats.map(item=>(
                 <div key={item.name} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>

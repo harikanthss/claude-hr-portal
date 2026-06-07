@@ -188,7 +188,6 @@ export default function GlobalSearch({ open, onClose, onNavigate }: GlobalSearch
             }
             if (item.type === 'employee') {
               const e = item.data as typeof employees[0];
-              const globalIdx = displayResults.slice(0, idx).filter(r => r.type === 'page').length;
               return (
                 <div
                   key={`emp-${e.id}`}

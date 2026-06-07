@@ -46,7 +46,7 @@ export default function AIChat() {
         </button>
       )}
       {open && (
-        <div style={{ position:'fixed', bottom:24, right:24, width:380, height:minimized?60:560, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:18, boxShadow:'0 24px 64px rgba(0,0,0,0.18)', zIndex:500, display:'flex', flexDirection:'column', overflow:'hidden', transition:'height 250ms' }}>
+        <div className="ai-chat-window" style={{ position:'fixed', bottom:24, right:24, width:380, height:minimized?60:560, background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:18, boxShadow:'0 24px 64px rgba(0,0,0,0.18)', zIndex:500, display:'flex', flexDirection:'column', overflow:'hidden', transition:'height 250ms' }}>
           <div style={{ padding:'14px 18px', background:'linear-gradient(135deg,#7c3aed,#4f46e5)', display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
             <div style={{ width:34, height:34, borderRadius:'50%', background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}><Sparkles size={17} color="white" /></div>
             <div style={{ flex:1 }}>

@@ -8,15 +8,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Grevya HR" />
-    <meta name="description" content="Grevya HR Portal — Modern HR management with AI insights" />
+    <meta name="application-name" content="Grevya HR Portal" />
+    <meta name="description" content="Grevya HR Portal is a modern HR management platform for employees, attendance, leave, payroll, performance, recruitment, and AI-powered people insights." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Grevya HR Portal" />
+    <meta property="og:description" content="Manage your complete HR operation with Grevya: employee records, leave, attendance, payroll, performance, recruitment, and AI insights in one secure portal." />
+    <meta property="og:image" content="/og-image.svg" />
+    <meta property="og:site_name" content="Grevya HR Portal" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Grevya HR Portal" />
+    <meta name="twitter:description" content="Modern HR management for fast-moving teams." />
+    <meta name="twitter:image" content="/og-image.svg" />
     <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>Grevya HR Portal</title>
   </head>
   <body>
     <div id="root"></div>
     <script>
-      // Apply dark mode immediately to prevent flash
       try {
         if (localStorage.getItem('darkMode') === 'true') {
           document.documentElement.classList.add('dark');
@@ -25,7 +35,11 @@
     </script>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      if ('serviceWorker' in navigator) {
+      if ('serviceWorker' in navigator && ['localhost', '127.0.0.1', '::1'].includes(location.hostname)) {
+        navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(reg => reg.unregister())).catch(()=>{});
+        if (window.caches) caches.keys().then(keys => keys.forEach(key => caches.delete(key))).catch(()=>{});
+      }
+      if ('serviceWorker' in navigator && !['localhost', '127.0.0.1', '::1'].includes(location.hostname)) {
         window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(()=>{}); });
       }
     </script>

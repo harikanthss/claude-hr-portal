@@ -1,0 +1,106 @@
+[
+  {
+    "id": "606e106f-d00c-5f8a-b5f2-5ce554fd43af",
+    "email": "manager@grevya.com",
+    "full_name": "Ravi Nair",
+    "role": "manager",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "7faa5457-ea30-5605-a024-a9152cadb499",
+    "email": "hr@grevya.com",
+    "full_name": "Divya Kumar",
+    "role": "hr_manager",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "0f94a42b-f823-5b0d-b45f-9fc06ff9251e",
+    "email": "employee@grevya.com",
+    "full_name": "Kiran Patel",
+    "role": "employee",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "67a9f011-6e0e-5e96-9446-338d3f91393e",
+    "email": "vikram@grevya.com",
+    "full_name": "Vikram Joshi",
+    "role": "employee",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "d2018c8e-bd6b-50e2-bd64-bd36f103e0d9",
+    "email": "sneha@grevya.com",
+    "full_name": "Sneha Rao",
+    "role": "employee",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "05ea4835-7665-5e09-836b-c8e3126d936a",
+    "email": "priya@grevya.com",
+    "full_name": "Priya Sharma",
+    "role": "employee",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "f22d2db6-b6c1-5140-90a0-f96172765785",
+    "email": "pooja@grevya.com",
+    "full_name": "Pooja Reddy",
+    "role": "employee",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "3d256282-078f-5566-acd4-b2214d41ed71",
+    "email": "arjun@grevya.com",
+    "full_name": "Arjun Mehta",
+    "role": "employee",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "57aa00a6-b578-5066-a2eb-9f340a68ba8d",
+    "email": "suresh@grevya.com",
+    "full_name": "Suresh Pillai",
+    "role": "employee",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "d7398273-47ed-580e-a666-df9ac5c85612",
+    "email": "rahul@grevya.com",
+    "full_name": "Rahul Gupta",
+    "role": "employee",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "84a67131-e180-5465-82b2-2a358ed09af0",
+    "email": "ananya@grevya.com",
+    "full_name": "Ananya Singh",
+    "role": "employee",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "4653e9de-0d68-5a70-9dbc-b9fe78c0a289",
+    "email": "meera@grevya.com",
+    "full_name": "Meera Iyer",
+    "role": "manager",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  },
+  {
+    "id": "894ee381-8efc-5529-9765-0f390bba344e",
+    "email": "admin@grevya.com",
+    "full_name": "System Admin",
+    "role": "admin",
+    "invite": true,
+    "password_migration": "not_migrated_use_invite_or_reset_flow"
+  }
+]

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../services/store';
 import { Bell, Sun, Moon, Search, Menu, ChevronDown } from 'lucide-react';
 import GlobalSearch from '../ui/GlobalSearch';
@@ -22,6 +22,14 @@ const PAGE_TITLES: Record<string, string> = {
   profile: 'Profile',
   recruitment: 'Recruitment Pipeline',
   orgchart: 'Org Chart',
+  expenses: 'Expense Claims',
+  calendar: 'Calendar',
+  documents: 'Documents',
+  shifts: 'Shift Scheduling',
+  audit: 'Audit Log',
+  compliance: 'Compliance Reports',
+  budget: 'Budget Tracker',
+  onboarding: 'Onboarding',
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -35,6 +43,7 @@ export default function Topbar({ currentPage, onNavigate }: TopbarProps) {
   const { currentUser, darkMode, toggleDarkMode, toggleSidebar, notifications } = useStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const unread = notifications.filter(n => !n.read && !n.isRead).length;
 
   useEffect(() => {
@@ -48,8 +57,16 @@ export default function Topbar({ currentPage, onNavigate }: TopbarProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      if (!userMenuRef.current?.contains(event.target as Node)) setShowUserMenu(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
   return (
-    <header style={{
+    <header className="topbar" style={{
       height: 'var(--header-h)',
       background: 'var(--bg-card)',
       borderBottom: '1px solid var(--border)',
@@ -63,12 +80,12 @@ export default function Topbar({ currentPage, onNavigate }: TopbarProps) {
       boxShadow: 'var(--shadow-sm)',
     }}>
       {/* Mobile menu */}
-      <button className="btn btn-ghost btn-icon" onClick={toggleSidebar} style={{ display: 'none' }}>
+      <button className="btn btn-ghost btn-icon mobile-menu-button" onClick={toggleSidebar} style={{ display: 'none' }} aria-label="Open navigation">
         <Menu size={18} />
       </button>
 
       {/* Page title */}
-      <div style={{ flex: 1 }}>
+      <div className="topbar-title" style={{ flex: 1, minWidth: 0 }}>
         <h2 style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0 }}>
           {PAGE_TITLES[currentPage] || 'Dashboard'}
         </h2>
@@ -76,7 +93,7 @@ export default function Topbar({ currentPage, onNavigate }: TopbarProps) {
 
       {/* Search */}
       <div 
-        className="search-wrap" 
+        className="search-wrap topbar-search" 
         style={{ width: 260, cursor: 'text' }}
         onClick={() => setSearchOpen(true)}
       >
@@ -128,8 +145,9 @@ export default function Topbar({ currentPage, onNavigate }: TopbarProps) {
         </button>
 
         {/* User menu */}
-        <div style={{ position: 'relative' }}>
+        <div ref={userMenuRef} style={{ position: 'relative' }}>
           <button
+            className="topbar-user-button"
             onClick={() => setShowUserMenu(v => !v)}
             style={{
               display: 'flex',
@@ -144,12 +162,12 @@ export default function Topbar({ currentPage, onNavigate }: TopbarProps) {
             }}
           >
             <div className="avatar avatar-sm">{currentUser?.avatar}</div>
-            <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+            <div className="topbar-user-details" style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
                 {currentUser?.name.split(' ')[0]}
               </span>
               <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                {currentUser?.role === 'hr_manager' ? 'HR Manager' : currentUser?.role === 'manager' ? 'Manager' : 'Employee'}
+                {currentUser?.role === 'super_admin' ? 'Founder' : currentUser?.role === 'admin' ? 'Administrator' : currentUser?.role === 'hr_manager' ? 'HR Manager' : currentUser?.role === 'manager' ? 'Manager' : 'Employee'}
               </span>
             </div>
             <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />

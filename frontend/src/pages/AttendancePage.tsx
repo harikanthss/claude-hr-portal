@@ -72,7 +72,7 @@ export default function AttendancePage() {
   const handleCheckIn = async () => {
     try {
       await api.post('/attendance/check-in', {});
-      toast.success('Checked in!', `Checked in at ${now.toTimeString().slice(0, 5)}`);
+      toast.success('Checked in!', `Checked in at ${new Date().toTimeString().slice(0, 5)}`);
       fetchAttendance(viewMonth, viewYear);
     } catch { toast.error('Check-in failed', 'You may have already checked in today.'); }
   };
@@ -80,7 +80,7 @@ export default function AttendancePage() {
   const handleCheckOut = async () => {
     try {
       await api.post('/attendance/check-out', {});
-      toast.success('Checked out!', `Checked out at ${now.toTimeString().slice(0, 5)}`);
+      toast.success('Checked out!', `Checked out at ${new Date().toTimeString().slice(0, 5)}`);
       fetchAttendance(viewMonth, viewYear);
     } catch { toast.error('Check-out failed', 'No check-in found or already checked out.'); }
   };

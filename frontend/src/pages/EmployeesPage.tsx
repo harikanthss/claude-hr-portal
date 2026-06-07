@@ -14,7 +14,7 @@ const DEPARTMENTS = ['All', 'Engineering', 'Sales', 'Design', 'Content', 'HR', '
 const EMPTY_EMP: Omit<Employee, 'id'> = {
   name: '', email: '', department: 'Engineering', position: '', status: 'active',
   joinDate: '', salary: 0, performance: 80, attendance: 90, avatar: '',
-  managerId: 'm1', phone: '', location: '', points: 0, badges: [], streak: 0,
+  managerId: '', phone: '', location: '', points: 0, badges: [], streak: 0,
 };
 
 /* Generate a deterministic-ish password from employee data */
@@ -31,7 +31,7 @@ interface CredInfo {
 
 export default function EmployeesPage() {
   const { currentUser, employees, addEmployee, updateEmployee, deleteEmployee } = useStore();
-  const isHR = currentUser?.role === 'hr_manager';
+  const isHR = currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'hr_manager';
 
   const [search, setSearch] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string|null>(null);
@@ -80,6 +80,7 @@ export default function EmployeesPage() {
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [form, setForm] = useState<Omit<Employee, 'id'>>(EMPTY_EMP);
+  const [saving, setSaving] = useState(false);
 
   // Credentials modal
   const [credInfo, setCredInfo] = useState<CredInfo | null>(null);
@@ -102,21 +103,32 @@ export default function EmployeesPage() {
       return sortDir === 'asc' ? cmp : -cmp;
     });
 
-  const openAdd = () => { setForm(EMPTY_EMP); setModal('add'); };
+  const openAdd = () => { setForm({ ...EMPTY_EMP }); setModal('add'); };
   const openEdit = (emp: Employee) => { setEditing(emp); setForm({ ...emp }); setModal('edit'); };
   const closeModal = () => { setModal(null); setEditing(null); };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name || !form.email) return;
-    const avatar = form.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-    if (modal === 'add') {
-      addEmployee({ ...form, avatar });
-      toast.success('Employee added!', `${form.name} has been added to the team.`);
-    } else if (editing) {
-      updateEmployee(editing.id, { ...form, avatar });
-      toast.success('Employee updated!', `${form.name}'s profile has been saved.`);
+    if (!Number.isFinite(Number(form.salary)) || Number(form.salary) < 0) {
+      toast.error('Invalid salary', 'Salary must be a valid number greater than or equal to 0.');
+      return;
     }
-    closeModal();
+    setSaving(true);
+    const avatar = form.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    try {
+      if (modal === 'add') {
+        await addEmployee({ ...form, salary: Number(form.salary), avatar });
+        toast.success('Employee added!', `${form.name} has been added to the team.`);
+      } else if (editing) {
+        await updateEmployee(editing.id, { ...form, salary: Number(form.salary), avatar });
+        toast.success('Employee updated!', `${form.name}'s profile has been saved.`);
+      }
+      closeModal();
+    } catch (err) {
+      toast.error(modal === 'add' ? 'Add employee failed' : 'Update failed', err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const sort = (key: keyof Employee) => {
@@ -208,13 +220,17 @@ export default function EmployeesPage() {
         </select>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{filtered.length} results</span>
-          <button className="btn btn-secondary" onClick={() => exportEmployees(employees)} style={{ marginRight:8 }}><span>⬇</span> Export CSV</button>
-          <input ref={fileInputRef} type="file" accept=".csv" onChange={handleImport} style={{ display:'none' }}/>
-          <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()} disabled={importing}>
-            {importing ? '⏳ Importing...' : '⬆ Import CSV'}
-          </button>
-          <button className="btn btn-secondary" onClick={downloadTemplate} title="Download CSV template">📋 Template</button>
-          <button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Add Employee</button>
+          <button className="btn btn-secondary" onClick={() => exportEmployees(filtered)} style={{ marginRight:8 }}><span>⬇</span> Export CSV</button>
+          {isHR && (
+            <>
+              <input ref={fileInputRef} type="file" accept=".csv" onChange={handleImport} style={{ display:'none' }}/>
+              <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+                {importing ? '⏳ Importing...' : '⬆ Import CSV'}
+              </button>
+              <button className="btn btn-secondary" onClick={downloadTemplate} title="Download CSV template">📋 Template</button>
+              <button className="btn btn-primary" onClick={openAdd}><Plus size={16} /> Add Employee</button>
+            </>
+          )}
         </div>
       </div>
 
@@ -283,9 +299,11 @@ export default function EmployeesPage() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(emp)} title="Edit">
-                        <Edit2 size={14} />
-                      </button>
+                      {isHR && (
+                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(emp)} title="Edit">
+                          <Edit2 size={14} />
+                        </button>
+                      )}
                       {isHR && (
                         <button
                           className="btn btn-ghost btn-icon btn-sm"
@@ -296,9 +314,11 @@ export default function EmployeesPage() {
                           <KeyRound size={14} />
                         </button>
                       )}
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => { setConfirmDelete(emp.id); setConfirmName(emp.name); }} title="Delete" style={{ color: '#dc2626' }}>
-                        <Trash2 size={14} />
-                      </button>
+                      {isHR && (
+                        <button className="btn btn-ghost btn-icon btn-sm" onClick={() => { setConfirmDelete(emp.id); setConfirmName(emp.name); }} title="Delete" style={{ color: '#dc2626' }}>
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -317,7 +337,7 @@ export default function EmployeesPage() {
 
       {/* ── Add/Edit Modal ─────────────────────────────── */}
       {modal && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay modal-overlay-top" onClick={closeModal}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3>{modal === 'add' ? 'Add New Employee' : 'Edit Employee'}</h3>
@@ -357,7 +377,10 @@ export default function EmployeesPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Salary (₹)</label>
-                  <input className="input" type="number" value={form.salary} onChange={e => setForm(f => ({ ...f, salary: Number(e.target.value) }))} placeholder="85000" />
+                  <input className="input" type="number" min={0} step="1" inputMode="numeric" value={form.salary} onChange={e => {
+                    const next = e.target.value === '' ? 0 : Math.max(0, Number(e.target.value));
+                    setForm(f => ({ ...f, salary: Number.isFinite(next) ? next : 0 }));
+                  }} onKeyDown={e => { if (['e','E','+','-'].includes(e.key)) e.preventDefault(); }} placeholder="85000" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Status</label>
@@ -375,8 +398,8 @@ export default function EmployeesPage() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={closeModal}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSubmit} disabled={!form.name || !form.email}>
-                {modal === 'add' ? 'Add Employee' : 'Save Changes'}
+              <button className="btn btn-primary" onClick={handleSubmit} disabled={!form.name || !form.email || saving}>
+                {saving ? 'Saving...' : modal === 'add' ? 'Add Employee' : 'Save Changes'}
               </button>
             </div>
           </div>

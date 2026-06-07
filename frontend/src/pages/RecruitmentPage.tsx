@@ -1,7 +1,8 @@
-import { api } from '../services/store';
+import { api, useStore } from '../services/store';
 import React, { useState } from 'react';
-import { Plus, X, Briefcase, Users, Clock, CheckCircle2, XCircle, Search, ChevronRight, Mail, Phone } from 'lucide-react';
+import { Plus, X, Briefcase, Users, Clock, CheckCircle2, XCircle, Search, ChevronRight, Mail, Phone, Download } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
+import { downloadCSV } from '../utils/exportCSV';
 
 interface Candidate {
   id: string;
@@ -60,6 +61,8 @@ const STAGE_NEXT: Record<string, Candidate['stage']> = {
 };
 
 export default function RecruitmentPage() {
+  const { currentUser } = useStore();
+  const canManageRecruitment = currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'hr_manager';
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [jobs, setJobs] = useState<JobOpening[]>([]);
 
@@ -82,6 +85,34 @@ export default function RecruitmentPage() {
     (deptFilter === 'All' || c.department === deptFilter) &&
     (!search || c.name.toLowerCase().includes(search.toLowerCase()) || c.position.toLowerCase().includes(search.toLowerCase()))
   );
+
+  const exportCurrentView = () => {
+    if (view === 'pipeline') {
+      downloadCSV('recruitment-candidates', filteredCandidates.map(c => ({
+        Name: c.name,
+        Email: c.email,
+        Phone: c.phone,
+        Position: c.position,
+        Department: c.department,
+        Stage: c.stage,
+        'Applied Date': c.appliedDate,
+        Score: c.score,
+        Note: c.note,
+      })));
+      return;
+    }
+
+    downloadCSV('recruitment-jobs', jobs.map(j => ({
+      Title: j.title,
+      Department: j.department,
+      Type: typeLabel(j.type),
+      Location: j.location,
+      Openings: j.openings,
+      Posted: j.posted,
+      Status: j.status,
+      'Active Candidates': candidates.filter(c => c.position === j.title && !['hired', 'rejected'].includes(c.stage)).length,
+    })));
+  };
 
   const advanceStage = async (id: string) => {
     const c = candidates.find(c => c.id === id);
@@ -169,8 +200,9 @@ export default function RecruitmentPage() {
           ))}
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          {view === 'pipeline' && <button className="btn btn-primary" onClick={() => setAddCandModal(true)}><Plus size={15} /> Add Candidate</button>}
-          {view === 'jobs' && <button className="btn btn-primary" onClick={() => setAddJobModal(true)}><Plus size={15} /> Post Job</button>}
+          <button className="btn btn-secondary" onClick={exportCurrentView}><Download size={15} /> Export CSV</button>
+          {canManageRecruitment && view === 'pipeline' && <button className="btn btn-primary" onClick={() => setAddCandModal(true)}><Plus size={15} /> Add Candidate</button>}
+          {canManageRecruitment && view === 'jobs' && <button className="btn btn-primary" onClick={() => setAddJobModal(true)}><Plus size={15} /> Post Job</button>}
         </div>
       </div>
 
@@ -217,7 +249,7 @@ export default function RecruitmentPage() {
                             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 4 }}>Score: {c.score}/100</div>
                           </div>
                         )}
-                        {!['hired', 'rejected'].includes(c.stage) && (
+                        {canManageRecruitment && !['hired', 'rejected'].includes(c.stage) && (
                           <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
                             {STAGE_NEXT[c.stage] && (
                               <button className="btn btn-primary btn-sm" style={{ flex: 1, fontSize: '0.7rem', padding: '4px 8px' }} onClick={() => advanceStage(c.id)}>
@@ -272,22 +304,22 @@ export default function RecruitmentPage() {
                 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
                   {candidates.filter(c => c.position === job.title && !['hired', 'rejected'].includes(c.stage)).length} active
                 </span>
-                <button className="btn btn-secondary btn-sm"
+                {canManageRecruitment && <button className="btn btn-secondary btn-sm"
                   onClick={async () => {
                     const nextStatus = job.status === 'active' ? 'paused' : 'active';
                     await api.put(`/jobs/${job.id}`, { ...job, status: nextStatus });
                     setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: nextStatus } : j));
                   }}>
                   {job.status === 'active' ? 'Pause' : 'Activate'}
-                </button>
-                <button className="btn btn-danger btn-sm"
+                </button>}
+                {canManageRecruitment && <button className="btn btn-danger btn-sm"
                   onClick={async () => { 
                     await api.put(`/jobs/${job.id}`, { ...job, status: 'closed' });
                     setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'closed' } : j)); 
                     toast.info('Job closed', job.title); 
                   }}>
                   Close
-                </button>
+                </button>}
               </div>
             </div>
           ))}
@@ -353,7 +385,7 @@ export default function RecruitmentPage() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setSelectedCandidate(null)}>Close</button>
-              {STAGE_NEXT[selectedCandidate.stage] && (
+              {canManageRecruitment && STAGE_NEXT[selectedCandidate.stage] && (
                 <button className="btn btn-primary" onClick={() => { advanceStage(selectedCandidate.id); setSelectedCandidate(null); }}>
                   <ChevronRight size={14} /> Advance to {STAGE_NEXT[selectedCandidate.stage]}
                 </button>

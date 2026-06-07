@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
-import { Star, TrendingUp, Award, Target, Plus, X, Check } from 'lucide-react';
+import { Star, TrendingUp, Award, Target, Plus, X, Check, Download } from 'lucide-react';
 import StatCard from '../components/ui/StatCard';
+import { downloadCSV } from '../utils/exportCSV';
 
 const SKILLS = ['technicalScore','communicationScore','leadershipScore','deliveryScore','innovationScore','teamworkScore'];
 const SKILL_LABELS: Record<string,string> = { technicalScore:'Technical', communicationScore:'Communication', leadershipScore:'Leadership', deliveryScore:'Delivery', innovationScore:'Innovation', teamworkScore:'Teamwork' };
@@ -16,6 +17,9 @@ export default function PerformancePage() {
   const isManager = ['admin','hr_manager','manager'].includes(currentUser?.role||'');
 
   const activeEmps = employees.filter(e => e.status !== 'inactive');
+  const reviewTargets = currentUser?.role === 'manager'
+    ? activeEmps.filter(e => e.managerId === currentUser.id)
+    : activeEmps;
   const avgPerf = activeEmps.length ? Math.round(activeEmps.reduce((s,e)=>s+e.performance,0)/activeEmps.length) : 0;
   const top = activeEmps.filter(e => e.performance >= 90).length;
   const needsReview = activeEmps.filter(e => e.performance < 75).length;
@@ -38,11 +42,19 @@ export default function PerformancePage() {
 
   const radarData = SKILLS.map(k => ({ skill: SKILL_LABELS[k], value: form[k] }));
   const topPerformers = [...activeEmps].sort((a,b) => b.performance - a.performance).slice(0, 8);
+  const sortedPerformance = [...activeEmps].sort((a,b)=>b.performance-a.performance);
   const COLORS = ['#7c3aed','#3b82f6','#22c55e','#f59e0b','#ef4444','#06b6d4','#84cc16','#f97316'];
 
   return (
     <div className="animate-fade">
       <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:20 }}>
+        <button className="btn btn-secondary" style={{ marginRight: 8 }} onClick={() => downloadCSV('performance', sortedPerformance.map(emp => ({
+          Employee: emp.name,
+          Department: emp.department,
+          Position: emp.position,
+          Score: emp.performance,
+          Status: emp.performance >= 90 ? 'Excellent' : emp.performance >= 75 ? 'Good' : 'Needs Review',
+        }))) }><Download size={15}/> Export CSV</button>
         {isManager && <button className="btn btn-primary" onClick={() => setShowForm(true)}><Plus size={15}/> Add Review</button>}
       </div>
 
@@ -89,7 +101,7 @@ export default function PerformancePage() {
               <tr><th>Employee</th><th>Department</th><th>Score</th><th>Trend</th><th>Status</th></tr>
             </thead>
             <tbody>
-              {[...activeEmps].sort((a,b)=>b.performance-a.performance).map(emp => (
+              {sortedPerformance.map(emp => (
                 <tr key={emp.id}>
                   <td><div style={{ display:'flex', alignItems:'center', gap:10 }}><div className="avatar avatar-sm">{emp.avatar}</div><div><div style={{ fontWeight:600, fontSize:'0.875rem' }}>{emp.name}</div><div style={{ fontSize:'0.7rem', color:'var(--text-muted)' }}>{emp.position}</div></div></div></td>
                   <td><span className="chip">{emp.department}</span></td>
@@ -145,7 +157,7 @@ export default function PerformancePage() {
                 <label className="form-label">Employee *</label>
                 <select className="input" value={form.employeeId} onChange={e=>setForm((f:any)=>({...f,employeeId:e.target.value}))}>
                   <option value="">Select employee</option>
-                  {activeEmps.map(e=><option key={e.id} value={e.id}>{e.name} — {e.department}</option>)}
+                  {reviewTargets.map(e=><option key={e.id} value={e.id}>{e.name} — {e.department}</option>)}
                 </select>
               </div>
               <div className="form-group">

@@ -3,6 +3,8 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const db = require('../config/database');
+const supabaseDb = require('../config/supabase');
+const supabaseHr = require('../data/supabaseHr');
 const { authenticateToken, requireAdminOrHR } = require('../middleware/auth');
 const { genId, logAudit, addNotification } = require('../utils/helpers');
 const { sendEmail, templates } = require('../config/email');
@@ -35,6 +37,30 @@ router.post('/employees', authenticateToken, requireAdminOrHR, upload.single('fi
 
   for (const row of rows) {
     try {
+      if (supabaseDb.enabled && req.user.supabase) {
+        const exists = await supabaseDb.queryOne('select id from public.profiles where email = $1', [row.email.trim().toLowerCase()]);
+        if (exists) {
+          results.push({ name: row.name, email: row.email, status: 'skipped', reason: 'Email already exists' });
+          skipped++;
+          continue;
+        }
+
+        const createdEmployee = await supabaseHr.createEmployee({
+          name: row.name,
+          email: row.email,
+          department: row.department || 'General',
+          position: row.position || row.designation || 'Employee',
+          salary: parseFloat(row.salary || row.ctc || '60000') || 60000,
+          joinDate: row.join_date || row.joining_date || new Date().toISOString().split('T')[0],
+          phone: row.phone || row.mobile || '',
+          location: row.location || row.city || '',
+        });
+        logAudit(req.user.id, req.user.name, 'create', 'employee', createdEmployee.id, `Bulk import: ${row.name}`, req.ip);
+        results.push({ name: row.name, email: row.email, status: 'created', inviteRequired: true });
+        created++;
+        continue;
+      }
+
       const exists = db.prepare('SELECT id FROM users WHERE email=?').get(row.email);
       if (exists) { results.push({ name: row.name, email: row.email, status: 'skipped', reason: 'Email already exists' }); skipped++; continue; }
 

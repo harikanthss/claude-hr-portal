@@ -63,7 +63,7 @@ export default function LeavePage() {
   return (
     <div className="animate-fade">
       <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:20 }}>
-        <button className="btn btn-secondary" onClick={() => exportLeaves(myLeaves)} style={{ marginRight:8 }}>⬇ Export CSV</button>
+        <button className="btn btn-secondary" onClick={() => exportLeaves(filtered)} style={{ marginRight:8 }}>⬇ Export CSV</button>
         <button className="btn btn-primary" onClick={() => setShowApply(true)}><Plus size={15}/> Apply for Leave</button>
       </div>
 

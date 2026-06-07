@@ -17,7 +17,7 @@ export function useLiveDashboard(refreshInterval = 60000) {
   const [loading, setLoading] = useState(true);
   const timer = useRef<ReturnType<typeof setInterval>>();
 
-  const fetch = async () => {
+  const fetchStats = async () => {
     try {
       const data = await api.get('/dashboard/stats');
       setStats(data);
@@ -26,10 +26,10 @@ export function useLiveDashboard(refreshInterval = 60000) {
   };
 
   useEffect(() => {
-    fetch();
-    timer.current = setInterval(fetch, refreshInterval);
+    fetchStats();
+    timer.current = setInterval(fetchStats, refreshInterval);
     return () => clearInterval(timer.current);
-  }, []);
+  }, [refreshInterval]);
 
-  return { stats, lastUpdated, loading, refresh: fetch };
+  return { stats, lastUpdated, loading, refresh: fetchStats };
 }

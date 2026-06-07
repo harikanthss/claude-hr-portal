@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
 import { FileText, Upload, Trash2, Download, Search, FolderOpen, X, Plus } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
+import { downloadCSV } from '../utils/exportCSV';
 
 interface Document { id: string; employeeId?: string; name: string; type: string; category: string; filePath: string; fileSize: number; uploadedBy: string; uploadedAt: string; description?: string; }
 
@@ -11,6 +12,7 @@ const CATEGORY_COLORS: Record<string, string> = { general: '#3b82f6', policy: '#
 
 export default function DocumentsPage() {
   const { currentUser, employees } = useStore();
+  const canDeleteDocuments = currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'hr_manager';
   const [docs, setDocs] = useState<Document[]>([]);
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('all');
@@ -85,7 +87,18 @@ export default function DocumentsPage() {
             {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => setModal(true)}><Upload size={15} /> Upload</button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button className="btn btn-secondary" onClick={() => downloadCSV('documents', filtered.map(d => ({
+            Name: d.name,
+            Category: CATEGORY_LABELS[d.category] || d.category,
+            Type: d.type,
+            'File Size': formatSize(d.fileSize),
+            'Uploaded By': d.uploadedBy,
+            'Uploaded At': d.uploadedAt,
+            Description: d.description,
+          }))) }><Download size={15} /> Export CSV</button>
+          <button className="btn btn-primary" onClick={() => setModal(true)}><Upload size={15} /> Upload</button>
+        </div>
       </div>
 
       <div className="card">
@@ -109,7 +122,7 @@ export default function DocumentsPage() {
                 <td>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <a href={`${(import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace('/api','')}${doc.filePath}`} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm"><Download size={13} /></a>
-                    <button className="btn btn-secondary btn-sm" onClick={() => handleDelete(doc.id)}><Trash2 size={13} /></button>
+                    {canDeleteDocuments && <button className="btn btn-secondary btn-sm" onClick={() => handleDelete(doc.id)}><Trash2 size={13} /></button>}
                   </div>
                 </td>
               </tr>
