@@ -1,114 +1,193 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { useStore } from './services/store';
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
+import ErrorBoundary from './components/ErrorBoundary';
 import Sidebar from './components/layout/Sidebar';
 import Topbar from './components/layout/Topbar';
-import HRDashboard from './pages/HRDashboard';
-import ManagerDashboard from './pages/ManagerDashboard';
-import EmployeeDashboard from './pages/EmployeeDashboard';
-import EmployeesPage from './pages/EmployeesPage';
-import LeavePage from './pages/LeavePage';
-import AttendancePage from './pages/AttendancePage';
-import PerformancePage from './pages/PerformancePage';
-import RecruitmentPage from './pages/RecruitmentPage';
-import OrgChartPage from './pages/OrgChartPage';
-import ExpensesPage from './pages/ExpensesPage';
-import OnboardingPage from './pages/OnboardingPage';
-import CalendarPage from './pages/CalendarPage';
-import ReportsPage from './pages/ReportsPage';
-import NotificationsPage from './pages/NotificationsPage';
-import LeaderboardPage from './pages/LeaderboardPage';
-import AIInsightsPage from './pages/AIInsightsPage';
-import ProfilePage from './pages/ProfilePage';
-import PayslipsPage from './pages/PayslipsPage';
-import CompliancePage from './pages/CompliancePage';
-import BudgetPage from './pages/BudgetPage';
-import DocumentsPage from './pages/DocumentsPage';
-import ShiftsPage from './pages/ShiftsPage';
-import AuditLogPage from './pages/AuditLogPage';
 import AIChat from './components/ai/AIChat';
 import { ToastContainer } from './components/ui/Toast';
+
+// ── Lazy-loaded pages (code-split for performance) ────────────────────────────
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const HRDashboard = lazy(() => import('./pages/HRDashboard'));
+const ManagerDashboard = lazy(() => import('./pages/ManagerDashboard'));
+const EmployeeDashboard = lazy(() => import('./pages/EmployeeDashboard'));
+const EmployeesPage = lazy(() => import('./pages/EmployeesPage'));
+const LeavePage = lazy(() => import('./pages/LeavePage'));
+const AttendancePage = lazy(() => import('./pages/AttendancePage'));
+const PerformancePage = lazy(() => import('./pages/PerformancePage'));
+const RecruitmentPage = lazy(() => import('./pages/RecruitmentPage'));
+const OrgChartPage = lazy(() => import('./pages/OrgChartPage'));
+const ExpensesPage = lazy(() => import('./pages/ExpensesPage'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
+const AIInsightsPage = lazy(() => import('./pages/AIInsightsPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const PayslipsPage = lazy(() => import('./pages/PayslipsPage'));
+const CompliancePage = lazy(() => import('./pages/CompliancePage'));
+const BudgetPage = lazy(() => import('./pages/BudgetPage'));
+const DocumentsPage = lazy(() => import('./pages/DocumentsPage'));
+const ShiftsPage = lazy(() => import('./pages/ShiftsPage'));
+const AuditLogPage = lazy(() => import('./pages/AuditLogPage'));
+const AccessRequestsPage = lazy(() => import('./pages/AccessRequestsPage'));
+const AccessReviewPage = lazy(() => import('./pages/AccessReviewPage'));
+
+// ── Suspense loading fallback ─────────────────────────────────────────────────
+function PageLoader() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', gap: 12 }}>
+      <div className="spinner" />
+      <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Loading…</span>
+    </div>
+  );
+}
 
 function PageContent({ page }: { page: string }) {
   const { currentUser } = useStore();
 
-  if (page === 'dashboard') {
-    if (currentUser?.role === 'hr_manager') return <HRDashboard />;
-    if (currentUser?.role === 'manager') return <ManagerDashboard />;
-    return <EmployeeDashboard />;
-  }
-  if (page === 'employees') return <EmployeesPage />;
-  if (page === 'leave') return <LeavePage />;
-  if (page === 'attendance') return <AttendancePage />;
-  if (page === 'performance') return <PerformancePage />;
-  if (page === 'reports') return <ReportsPage />;
-  if (page === 'notifications') return <NotificationsPage />;
-  if (page === 'leaderboard') return <LeaderboardPage />;
-  if (page === 'ai') return <AIInsightsPage />;
-  if (page === 'payslips') return <PayslipsPage />;
-  if (page === 'profile') return <ProfilePage />;
-  if (page === 'recruitment') return <RecruitmentPage />;
-  if (page === 'orgchart') return <OrgChartPage />;
-  if (page === 'expenses') return <ExpensesPage />;
-  if (page === 'onboarding') return <OnboardingPage />;
-  if (page === 'calendar') return <CalendarPage />;
-  if (page === 'documents') return <DocumentsPage />;
-  if (page === 'shifts') return <ShiftsPage />;
-  if (page === 'audit') return <AuditLogPage />;
-  if (page === 'compliance') return <CompliancePage />;
-  if (page === 'budget') return <BudgetPage />;
-  return <HRDashboard />;
+  const getPage = () => {
+    if (page === 'dashboard') {
+      if (currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'hr_manager') return <HRDashboard />;
+      if (currentUser?.role === 'manager') return <ManagerDashboard />;
+      return <EmployeeDashboard />;
+    }
+    if (page === 'employees') return <EmployeesPage />;
+    if (page === 'leave') return <LeavePage />;
+    if (page === 'attendance') return <AttendancePage />;
+    if (page === 'performance') return <PerformancePage />;
+    if (page === 'reports') return <ReportsPage />;
+    if (page === 'notifications') return <NotificationsPage />;
+    if (page === 'leaderboard') return <LeaderboardPage />;
+    if (page === 'ai') return <AIInsightsPage />;
+    if (page === 'payslips') return <PayslipsPage />;
+    if (page === 'profile') return <ProfilePage />;
+    if (page === 'recruitment') return <RecruitmentPage />;
+    if (page === 'orgchart') return <OrgChartPage />;
+    if (page === 'expenses') return <ExpensesPage />;
+    if (page === 'onboarding') return <OnboardingPage />;
+    if (page === 'calendar') return <CalendarPage />;
+    if (page === 'documents') return <DocumentsPage />;
+    if (page === 'shifts') return <ShiftsPage />;
+    if (page === 'audit') return <AuditLogPage />;
+    if (page === 'access') return <AccessRequestsPage />;
+    if (page === 'compliance') return <CompliancePage />;
+    if (page === 'budget') return <BudgetPage />;
+    return <HRDashboard />;
+  };
+
+  return (
+    <ErrorBoundary key={page}>
+      <Suspense fallback={<PageLoader />}>
+        {getPage()}
+      </Suspense>
+    </ErrorBoundary>
+  );
 }
 
 export default function App() {
-  const { currentUser, darkMode, sidebarOpen } = useStore();
-  const [page, setPage] = useState('dashboard');
+  const { currentUser, darkMode, sidebarOpen, authStatus, initializeAuth, setSidebarOpen } = useStore();
+  const [page, setPage] = useState(() => localStorage.getItem('currentPage') || 'dashboard');
   const [appView, setAppView] = useState<'landing' | 'login' | 'app'>('landing');
+  const isAccessReview = window.location.pathname === '/access-review';
+
+  const navigate = (nextPage: string) => {
+    setPage(nextPage);
+    localStorage.setItem('currentPage', nextPage);
+    if (window.innerWidth <= 900) setSidebarOpen(false);
+  };
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
+  useEffect(() => {
+    initializeAuth().catch((err) => console.error('[Auth] Session restore failed:', err));
+  }, [initializeAuth]);
+
+  useEffect(() => {
+    let wasMobile = window.innerWidth <= 900;
+    const handleResize = () => {
+      const isMobile = window.innerWidth <= 900;
+      if (isMobile !== wasMobile) {
+        setSidebarOpen(!isMobile);
+        wasMobile = isMobile;
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [setSidebarOpen]);
+
   // Once user logs in, switch to app view
   useEffect(() => {
     if (currentUser && appView !== 'app') setAppView('app');
+    if (!currentUser && ['pending', 'denied'].includes(authStatus) && appView !== 'login') setAppView('login');
     if (!currentUser && appView === 'app') setAppView('landing');
-  }, [currentUser]);
+  }, [currentUser, authStatus, appView]);
+
+  if (isAccessReview) {
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <AccessReviewPage />
+        </Suspense>
+        <ToastContainer />
+      </ErrorBoundary>
+    );
+  }
+
+  if (authStatus === 'checking') {
+    return (
+      <ErrorBoundary>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)' }}>
+          <PageLoader />
+        </div>
+        <ToastContainer />
+      </ErrorBoundary>
+    );
+  }
 
   if (appView === 'landing') {
     return (
-      <>
-        <LandingPage onGetStarted={() => setAppView('login')} />
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <LandingPage onGetStarted={() => setAppView('login')} />
+        </Suspense>
         <ToastContainer />
-      </>
+      </ErrorBoundary>
     );
   }
 
   if (appView === 'login' && !currentUser) {
     return (
-      <>
-        <LoginPage onBack={() => setAppView('landing')} />
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <LoginPage onBack={() => setAppView('landing')} />
+        </Suspense>
         <ToastContainer />
-      </>
+      </ErrorBoundary>
     );
   }
 
   return (
-    <div className="app-layout">
-      <Sidebar currentPage={page} onNavigate={setPage} />
-      <div className={`main-content ${!sidebarOpen ? 'sidebar-collapsed' : ''}`}>
-        <Topbar currentPage={page} onNavigate={setPage} />
-        <main className="page-content">
-          <div className="page-header">
-            <PageHeader page={page} />
-          </div>
-          <PageContent page={page} />
-        </main>
+    <ErrorBoundary>
+      <div className="app-layout">
+        <Sidebar currentPage={page} onNavigate={navigate} />
+        <div className={`main-content ${!sidebarOpen ? 'sidebar-collapsed' : ''}`}>
+          <Topbar currentPage={page} onNavigate={navigate} />
+          <main className="page-content">
+            <div className="page-header">
+              <PageHeader page={page} />
+            </div>
+            <PageContent page={page} />
+          </main>
+        </div>
+        <AIChat />
+        <ToastContainer />
       </div>
-      <AIChat />
-      <ToastContainer />
-    </div>
+    </ErrorBoundary>
   );
 }
 
@@ -132,6 +211,7 @@ const PAGE_META: Record<string, { title: string; desc: string }> = {
   documents: { title: 'Documents', desc: 'Upload, manage and download company documents' },
   shifts: { title: 'Shift Scheduling', desc: 'Schedule and manage employee shifts' },
   audit: { title: 'Audit Log', desc: 'Track all system activities and changes' },
+  access: { title: 'Access Requests', desc: 'Approve or reject pending portal users' },
   compliance: { title: 'Compliance Reports', desc: 'PF, ESI, TDS and statutory filing reports' },
   budget: { title: 'Budget Tracker', desc: 'Department budget allocation and tracking' },
 };

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const supabaseDb = require('../config/supabase');
 const { authenticateToken, requireAdminOrHR } = require('../middleware/auth');
 const { genId } = require('../utils/helpers');
 
@@ -24,8 +25,19 @@ const INDIAN_HOLIDAYS_2024 = [
   { date:'2024-12-25', title:"Christmas Day", type:'holiday', color:'#ef4444' },
 ];
 
-router.post('/seed', authenticateToken, requireAdminOrHR, (req, res) => {
+router.post('/seed', authenticateToken, requireAdminOrHR, async (req, res) => {
   try {
+    if (supabaseDb.enabled && req.user.supabase) {
+      let added = 0;
+      for (const h of INDIAN_HOLIDAYS_2024) {
+        const exists = await supabaseDb.queryOne('select id from public.holidays where date = $1 and name = $2', [h.date, h.title]);
+        if (!exists) {
+          await supabaseDb.query('insert into public.holidays (date, name) values ($1, $2)', [h.date, h.title]);
+          added++;
+        }
+      }
+      return res.json({ message: `${added} holidays added`, total: INDIAN_HOLIDAYS_2024.length });
+    }
     let added = 0;
     for (const h of INDIAN_HOLIDAYS_2024) {
       const exists = db.prepare("SELECT id FROM calendar_events WHERE date=? AND title=?").get(h.date, h.title);
@@ -40,8 +52,12 @@ router.post('/seed', authenticateToken, requireAdminOrHR, (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
+    if (supabaseDb.enabled && req.user.supabase) {
+      const rows = await supabaseDb.queryAll('select date, name as title from public.holidays order by date');
+      return res.json(rows.map((row) => ({ date: row.date, title: row.title, type: 'holiday', color: '#ef4444' })));
+    }
     res.json(INDIAN_HOLIDAYS_2024);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

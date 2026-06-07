@@ -1,12 +1,24 @@
+import { toast } from '../components/ui/Toast';
+
+function cleanCSVValue(value: unknown): string | number {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') return Number.isFinite(value) ? value : '';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (Array.isArray(value)) return value.map(cleanCSVValue).filter(v => v !== '').join(', ');
+  return String(value).replace(/[–—]/g, '-').trim();
+}
+
 export function downloadCSV(filename: string, rows: Record<string, any>[]) {
-  if (!rows.length) return;
+  if (!rows.length) {
+    toast.info('No data to export', 'There are no rows matching the current view.');
+    return false;
+  }
   const headers = Object.keys(rows[0]);
   const csv = [
     headers.join(','),
     ...rows.map(row =>
       headers.map(h => {
-        const val = row[h] ?? '';
-        const str = String(val).replace(/"/g, '""');
+        const str = String(cleanCSVValue(row[h])).replace(/"/g, '""');
         return str.includes(',') || str.includes('"') || str.includes('\n')
           ? `"${str}"`
           : str;
@@ -21,6 +33,7 @@ export function downloadCSV(filename: string, rows: Record<string, any>[]) {
   a.download = `${filename}-${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+  return true;
 }
 
 export function exportEmployees(employees: any[]) {

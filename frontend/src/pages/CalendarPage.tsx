@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, X, Download } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
+import { downloadCSV } from '../utils/exportCSV';
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -30,7 +31,7 @@ interface CalendarEvent { id: string; title: string; date: string; endDate?: str
 
 export default function CalendarPage() {
   const { leaveRequests, currentUser } = useStore();
-  const isAdmin = currentUser?.role !== 'employee';
+  const isAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin' || currentUser?.role === 'hr_manager';
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [year, setYear] = useState(2024);
   const [month, setMonth] = useState(2);
@@ -62,12 +63,47 @@ export default function CalendarPage() {
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
   const monthLeaves = leaveRequests.filter(r => {
-    const sm = new Date(r.startDate).getMonth();
-    const em = new Date(r.endDate).getMonth();
-    return sm === month || em === month;
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0);
+    return new Date(r.startDate) <= monthEnd && new Date(r.endDate) >= monthStart;
   });
 
   const selectedEvents = selectedDate ? getEventsForDay(parseInt(selectedDate.split('-')[2])) : null;
+
+  const exportCurrentMonth = () => {
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+    const rows = [
+      ...events.filter(e => e.date.startsWith(monthPrefix)).map(e => ({
+        Date: e.date,
+        Type: e.type,
+        Title: e.title,
+        Description: e.description,
+        Status: '',
+      })),
+      ...HOLIDAYS.filter(h => h.date.startsWith(monthPrefix)).map(h => ({
+        Date: h.date,
+        Type: h.type,
+        Title: h.name,
+        Description: '',
+        Status: '',
+      })),
+      ...BIRTHDAYS.filter(b => b.date.startsWith(String(month + 1).padStart(2, '0'))).map(b => ({
+        Date: `${year}-${b.date}`,
+        Type: 'birthday',
+        Title: `${b.name} Birthday`,
+        Description: '',
+        Status: '',
+      })),
+      ...monthLeaves.map(l => ({
+        Date: `${l.startDate} to ${l.endDate}`,
+        Type: `${l.type} leave`,
+        Title: l.employeeName,
+        Description: '',
+        Status: l.status,
+      })),
+    ];
+    downloadCSV('calendar', rows);
+  };
 
   const handleAddEvent = async () => {
     if (!form.title || !form.date) return;
@@ -97,6 +133,7 @@ export default function CalendarPage() {
             <button className="btn btn-secondary btn-sm" onClick={prevMonth}><ChevronLeft size={16} /></button>
             <h3 style={{ fontWeight: 700, fontSize: '1.1rem' }}>{MONTHS[month]} {year}</h3>
             <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-secondary btn-sm" onClick={exportCurrentMonth}><Download size={14} /> Export CSV</button>
               {isAdmin && <button className="btn btn-primary btn-sm" onClick={() => setModal(true)}><Plus size={14} /> Add Event</button>}
               <button className="btn btn-secondary btn-sm" onClick={nextMonth}><ChevronRight size={16} /></button>
             </div>

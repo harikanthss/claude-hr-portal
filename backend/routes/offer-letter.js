@@ -1,12 +1,33 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const supabaseDb = require('../config/supabase');
 const { authenticateToken, requireAdminOrHR } = require('../middleware/auth');
+const { escapeHtml } = require('../utils/helpers');
 
-router.get('/:candidateId', authenticateToken, requireAdminOrHR, (req, res) => {
+router.get('/:candidateId', authenticateToken, requireAdminOrHR, async (req, res) => {
   try {
-    const c = db.prepare('SELECT * FROM candidates WHERE id=?').get(req.params.candidateId);
-    if (!c) return res.status(404).json({ error: 'Candidate not found' });
+    const raw = supabaseDb.enabled && req.user.supabase
+      ? await supabaseDb.queryOne(
+        `
+        select c.name, c.email, jp.title as position, d.name as department
+        from public.candidates c
+        left join public.job_postings jp on jp.id = c.job_posting_id
+        left join public.departments d on d.id = jp.department_id
+        where c.id = $1
+        `,
+        [req.params.candidateId],
+      )
+      : db.prepare('SELECT * FROM candidates WHERE id=?').get(req.params.candidateId);
+    if (!raw) return res.status(404).json({ error: 'Candidate not found' });
+
+    // Escape all user-provided fields to prevent XSS
+    const c = {
+      name: escapeHtml(raw.name),
+      position: escapeHtml(raw.position),
+      department: escapeHtml(raw.department),
+      email: escapeHtml(raw.email),
+    };
 
     const today = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
     const joiningDate = new Date(Date.now() + 14*24*60*60*1000).toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
@@ -89,7 +110,7 @@ router.get('/:candidateId', authenticateToken, requireAdminOrHR, (req, res) => {
 </html>`;
 
     res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Content-Disposition', `inline; filename="offer-letter-${c.name.replace(/\s+/g,'-')}.html"`);
+    res.setHeader('Content-Disposition', `inline; filename="offer-letter-${raw.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'')}.html"`);
     res.send(html);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

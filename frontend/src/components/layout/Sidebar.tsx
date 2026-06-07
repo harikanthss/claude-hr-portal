@@ -4,7 +4,7 @@ import { UserRole } from '../../types';
 import {
   LayoutDashboard, Users, Calendar, Clock, BarChart3,
   LogOut, ChevronLeft, ChevronRight, Bell, User, Trophy, Zap,
-  FileText, Home, Briefcase, GitBranch, FolderOpen, Shield, Sun
+  FileText, Home, Briefcase, GitBranch, FolderOpen, Shield, Sun, UserCheck
 , TrendingUp } from 'lucide-react';
 
 interface NavItem {
@@ -15,41 +15,46 @@ interface NavItem {
   badge?: number;
 }
 
+const ALL_ROLES: UserRole[] = ['super_admin', 'admin', 'hr_manager', 'manager', 'employee'];
+const HR_ROLES: UserRole[] = ['super_admin', 'admin', 'hr_manager'];
+const ADMIN_HR_MANAGER_ROLES: UserRole[] = ['super_admin', 'admin', 'hr_manager', 'manager'];
+
 const NAV_SECTIONS = [
   {
     label: 'Main',
     items: [
-      { label: 'Dashboard',       icon: <LayoutDashboard size={18} />, page: 'dashboard',   roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Employees',       icon: <Users size={18} />,           page: 'employees',   roles: ['hr_manager', 'manager'] as UserRole[] },
-      { label: 'Org Chart',       icon: <GitBranch size={18} />,       page: 'orgchart',    roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Recruitment',     icon: <Briefcase size={18} />,       page: 'recruitment', roles: ['hr_manager', 'manager'] as UserRole[] },
-      { label: 'Onboarding',      icon: <Users size={18} />,           page: 'onboarding',  roles: ['hr_manager', 'manager'] as UserRole[] },
+      { label: 'Dashboard',       icon: <LayoutDashboard size={18} />, page: 'dashboard',   roles: ALL_ROLES },
+      { label: 'Employees',       icon: <Users size={18} />,           page: 'employees',   roles: ADMIN_HR_MANAGER_ROLES },
+      { label: 'Org Chart',       icon: <GitBranch size={18} />,       page: 'orgchart',    roles: ALL_ROLES },
+      { label: 'Recruitment',     icon: <Briefcase size={18} />,       page: 'recruitment', roles: ADMIN_HR_MANAGER_ROLES },
+      { label: 'Onboarding',      icon: <Users size={18} />,           page: 'onboarding',  roles: ADMIN_HR_MANAGER_ROLES },
     ],
   },
   {
     label: 'HR',
     items: [
-      { label: 'Leave Management', icon: <Calendar size={18} />,  page: 'leave',       roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Attendance',       icon: <Clock size={18} />,     page: 'attendance',  roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Performance',      icon: <BarChart3 size={18} />, page: 'performance', roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Expenses',         icon: <FileText size={18} />,  page: 'expenses',    roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Calendar',         icon: <Calendar size={18} />,  page: 'calendar',    roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Reports',          icon: <FileText size={18} />,  page: 'reports',     roles: ['hr_manager', 'manager'] as UserRole[] },
-      { label: 'Payslips',         icon: <FileText size={18} />,  page: 'payslips',    roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Documents',        icon: <FolderOpen size={18} />, page: 'documents',   roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Shifts',           icon: <Sun size={18} />,        page: 'shifts',      roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
+      { label: 'Leave Management', icon: <Calendar size={18} />,  page: 'leave',       roles: ALL_ROLES },
+      { label: 'Attendance',       icon: <Clock size={18} />,     page: 'attendance',  roles: ALL_ROLES },
+      { label: 'Performance',      icon: <BarChart3 size={18} />, page: 'performance', roles: ALL_ROLES },
+      { label: 'Expenses',         icon: <FileText size={18} />,  page: 'expenses',    roles: ALL_ROLES },
+      { label: 'Calendar',         icon: <Calendar size={18} />,  page: 'calendar',    roles: ALL_ROLES },
+      { label: 'Reports',          icon: <FileText size={18} />,  page: 'reports',     roles: ADMIN_HR_MANAGER_ROLES },
+      { label: 'Payslips',         icon: <FileText size={18} />,  page: 'payslips',    roles: ['super_admin', 'admin', 'hr_manager', 'employee'] as UserRole[] },
+      { label: 'Documents',        icon: <FolderOpen size={18} />, page: 'documents',   roles: ALL_ROLES },
+      { label: 'Shifts',           icon: <Sun size={18} />,        page: 'shifts',      roles: ALL_ROLES },
     ],
   },
   {
     label: 'More',
     items: [
-      { label: 'Leaderboard',   icon: <Trophy size={18} />, page: 'leaderboard',   roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'AI Insights',   icon: <Zap size={18} />,    page: 'ai',            roles: ['hr_manager', 'manager'] as UserRole[] },
-      { label: 'Audit Log',     icon: <Shield size={18} />, page: 'audit',         roles: ['hr_manager', 'manager'] as UserRole[] },
-      { label: 'Compliance',     icon: <Shield size={18} />, page: 'compliance',    roles: ['admin', 'hr_manager'] as UserRole[] },
-      { label: 'Budget Tracker',  icon: <TrendingUp size={18} />, page: 'budget',       roles: ['admin', 'hr_manager'] as UserRole[] },
-      { label: 'Notifications', icon: <Bell size={18} />,   page: 'notifications', roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
-      { label: 'Profile',       icon: <User size={18} />,   page: 'profile',       roles: ['hr_manager', 'manager', 'employee'] as UserRole[] },
+      { label: 'Leaderboard',   icon: <Trophy size={18} />, page: 'leaderboard',   roles: ALL_ROLES },
+      { label: 'AI Insights',   icon: <Zap size={18} />,    page: 'ai',            roles: ADMIN_HR_MANAGER_ROLES },
+      { label: 'Access Requests', icon: <UserCheck size={18} />, page: 'access',   roles: HR_ROLES },
+      { label: 'Audit Log',     icon: <Shield size={18} />, page: 'audit',         roles: HR_ROLES },
+      { label: 'Compliance',     icon: <Shield size={18} />, page: 'compliance',    roles: HR_ROLES },
+      { label: 'Budget Tracker',  icon: <TrendingUp size={18} />, page: 'budget',       roles: HR_ROLES },
+      { label: 'Notifications', icon: <Bell size={18} />,   page: 'notifications', roles: ALL_ROLES },
+      { label: 'Profile',       icon: <User size={18} />,   page: 'profile',       roles: ALL_ROLES },
     ],
   },
 ];
@@ -62,7 +67,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
-  const { currentUser, sidebarOpen, toggleSidebar, logout, notifications } = useStore();
+  const { currentUser, sidebarOpen, toggleSidebar, setSidebarOpen, logout, notifications } = useStore();
   const unread = notifications.filter(n => !n.read && !n.isRead).length;
 
   if (!currentUser) return null;
@@ -70,6 +75,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const filtered = NAV_ITEMS.filter(item => item.roles.includes(currentUser.role));
 
   const ROLE_MAP: Record<string, string> = {
+    super_admin: 'Founder',
     admin: 'Administrator',
     hr_manager: 'HR Manager',
     manager: 'Manager',
@@ -78,7 +84,9 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
   const roleLabel = ROLE_MAP[currentUser.role] || currentUser.role;
 
   return (
+    <>
     <aside
+      className={`layout-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}
       style={{
         width: sidebarOpen ? 'var(--sidebar-w)' : '72px',
         position: 'fixed',
@@ -88,7 +96,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
         background: 'var(--bg-sidebar)',
         display: 'flex',
         flexDirection: 'column',
-        zIndex: 200,
+        zIndex: 230,
         transition: 'width 200ms cubic-bezier(.4,0,.2,1)',
         overflow: 'hidden',
         boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
@@ -161,6 +169,8 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
                 return (
                   <button
                     key={item.page}
+                    aria-label={item.label}
+                    title={item.label}
                     onClick={() => onNavigate(item.page)}
                     style={{
                       display: 'flex',
@@ -244,6 +254,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
       {/* Collapse toggle */}
       <button
         onClick={toggleSidebar}
+        className="sidebar-collapse-toggle"
         style={{
           position: 'absolute',
           top: 22,
@@ -266,5 +277,7 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
         {sidebarOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
       </button>
     </aside>
+    {sidebarOpen && <button className="sidebar-overlay" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
+    </>
   );
 }

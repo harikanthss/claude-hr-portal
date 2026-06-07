@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
 import { Plus, X, Receipt, CheckCircle2, XCircle, Clock, Upload, Download } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
+import { downloadCSV } from '../utils/exportCSV';
 
 interface Expense {
   id: string; employeeId: string; employeeName: string; employeeAvatar: string;
@@ -95,7 +96,20 @@ export default function ExpensesPage() {
             </button>
           ))}
         </div>
-        <button className="btn btn-primary" onClick={() => setModal(true)}><Plus size={15} /> New Expense</button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button className="btn btn-secondary" onClick={() => downloadCSV('expenses', filtered.map(e => ({
+            Employee: e.employeeName,
+            Category: e.category,
+            Description: e.description,
+            Amount: e.amount,
+            Date: e.date,
+            Status: e.status,
+            'Submitted On': e.submittedOn,
+            'Approved By': e.approvedBy,
+            Comments: e.comments,
+          }))) }><Download size={15} /> Export CSV</button>
+          <button className="btn btn-primary" onClick={() => setModal(true)}><Plus size={15} /> New Expense</button>
+        </div>
       </div>
 
       <div className="card">

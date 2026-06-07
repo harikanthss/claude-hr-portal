@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, api } from '../services/store';
-import { Plus, X, Check, Clock, Trash2 } from 'lucide-react';
+import { Plus, X, Check, Clock, Trash2, Download } from 'lucide-react';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import { toast } from '../components/ui/Toast';
+import { downloadCSV } from '../utils/exportCSV';
 
 const SHIFT_TYPES = [
   { id: 'morning',   label: 'Morning',   time: '09:00 – 17:00', color: '#22c55e' },
@@ -31,7 +32,7 @@ function getMondayOfWeek(d: Date): Date {
 
 export default function ShiftsPage() {
   const { employees, currentUser } = useStore();
-  const isManager = ['admin', 'hr_manager', 'manager'].includes(currentUser?.role || '');
+  const isManager = ['super_admin', 'admin', 'hr_manager', 'manager'].includes(currentUser?.role || '');
 
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOfWeek(new Date()));
   const [shifts, setShifts] = useState<any[]>([]);
@@ -115,11 +116,22 @@ export default function ShiftsPage() {
           <button className="btn btn-secondary btn-sm" onClick={nextWeek}>Next ›</button>
           <button className="btn btn-secondary btn-sm" onClick={goToday}>Today</button>
         </div>
-        {isManager && (
-          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            <Plus size={15} /> Add Shift
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button className="btn btn-secondary" onClick={() => downloadCSV('shifts', shifts.map(s => ({
+            Employee: s.employeeName,
+            Date: s.date,
+            Shift: s.shiftType,
+            'Start Time': s.startTime,
+            'End Time': s.endTime,
+            Status: s.status,
+            Notes: s.notes,
+          }))) }><Download size={15} /> Export CSV</button>
+          {isManager && (
+            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+              <Plus size={15} /> Add Shift
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Week Grid */}
